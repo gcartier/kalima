@@ -34,7 +34,7 @@
     {Image-Resource "Pad"})
   
   (method meta override (host-title)
-    "Arabic Lesson")
+    "Lesson")
   
   (method meta override (host-size)
     {Dimension 800 500})
@@ -97,7 +97,7 @@
     
     (define (setup-ask)
       (let ((combo (locate 'ask)))
-        (set-choices~ combo '((primary "French") (secondary "Arabic") (:random "Random")))
+        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (:random "Random")))
         (set-value~ combo 'primary)))
     
     (define (setup-subjects)
@@ -120,7 +120,7 @@
                               (add-row~ tree children: (list node) user-data: theme)))))
                       (collect-subjects))))))
     
-    (set! dictionary (load-dictionary arabic-dic))
+    (set! dictionary (get-current-dictionary))
     (set! ask 'primary)
     (setup-select)
     (setup-ask)
@@ -257,7 +257,7 @@
            (case language
              ((primary) (display secondary {Color Dark-Green}))
              ((secondary) (display primary {Color Black})))))
-        (display-note (or note ""))))
+        (display-note note)))
     (statistics))
   
   
@@ -289,7 +289,7 @@
     {Image-Resource "Doc"})
   
   (method meta override (host-title)
-    "Arabic Dictionary")
+    "Dictionary")
   
   (method meta override (host-size)
     {Dimension 800 500})
@@ -334,10 +334,10 @@
   (method (setup)
     (define (setup-language)
       (let ((combo (locate 'language)))
-        (set-choices~ combo '((primary "French") (secondary "Arabic")))
+        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary))))
         (set-value~ combo 'primary)))
     
-    (set! dictionary (load-dictionary arabic-dic))
+    (set! dictionary (get-current-dictionary))
     (set! entries (collect-entries~ dictionary))
     (set! language 'primary)
     (setup-language)
@@ -380,7 +380,7 @@
           (display title (case language
                            ((primary) {Color Dark-Green})
                            ((secondary) {Color Black})))
-          (display-note (or note ""))))))
+          (display-note note)))))
   
   
   ;;;
@@ -411,26 +411,20 @@
     {Image-Resource "WorkspaceText"})
   
   (method meta override (host-title)
-    "Arabic Editor")
+    "Editor")
   
   (method meta override (host-size)
     {Dimension 800 500})
   
   
   (slot dictionary initialize #f)
-  (slot themes     initialize #f)
   (slot entries    initialize #f)
   (slot entry      initialize #f)
-  (slot language   initialize #f)
   
   
   (form
     (<install>                                           layout-type: border
       (<Layout-View>                    name: toolbar    size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
-        (<Border-View>                                   size: {Dimension 120 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
-          (<Border-View>                                 border-color: {Color Entry-Border}
-            (<Combo-Box>                name: language   content-change-handler: {Event-Handler :document on-language})))
-        (<Separator>                                     size: {Dimension 12 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Add Entry" resource: {Image-Resource "Add"} portfolio: :images action-handler: {Event-Handler :form on-add})
         (<Separator>                                     size: {Dimension 4 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Remove Entry" resource: {Image-Resource "Remove"} portfolio: :images action-handler: {Event-Handler :form on-remove}))
@@ -441,11 +435,11 @@
               (<Tree-Header>                             style: document
                 (<!>                     name: content
                   (<Tree-View>           name: entries   filled-column: note portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
-                    (<Tree-Node-Column>  name: primary   title: "French" display-images?: #f toplevel-controls?: #f width: 175)
-                    (<Tree-Label-Column> name: secondary title: "Arabic" width: 175)
+                    (<Tree-Node-Column>  name: primary   title: "" display-images?: #f toplevel-controls?: #f width: 175)
+                    (<Tree-Label-Column> name: secondary title: "" width: 175)
                     (<Tree-Label-Column> name: note      title: "Note"))))))
           (<Layout-View>                                 location: second layout-type: center
-            (<Kalima-Entry-View>         name: entry     size: {Dimension 250 100} location: center))))))
+            (<Kalima-Entry-View>         name: entry     size: {Dimension 350 100} location: center))))))
   
   
   (method override (finish rest)
@@ -459,33 +453,29 @@
   
   
   (method (setup)
-    (define (setup-language)
-      (let ((combo (locate 'language)))
-        (set-choices~ combo '((primary "French") (secondary "Arabic")))
-        (set-value~ combo 'primary)))
-    
-    (set! dictionary (load-dictionary arabic-dic))
+    (set! dictionary (get-current-dictionary))
     (set! entries (collect-entries~ dictionary))
-    (set! language 'primary)
-    (setup-language)
     (setup-words))
   
   
   (method (setup-words)
-    (let ((tree (locate 'entries))
-          (first (case language ((primary) get-primary~) ((secondary) get-secondary~)))
-          (second (case language ((primary) get-secondary~) ((secondary) get-primary~))))
+    (let ((tree (locate 'entries)))
       (remove-every-row~ tree)
       (with-update-locked~ tree
         (lambda ()
           (for-each (lambda (entry)
-                      (let ((first (first entry))
-                            (second (second entry))
+                      (let ((primary (get-primary~ entry))
+                            (secondary (get-secondary~ entry))
                             (note (get-note~ entry)))
-                        (add-row~ tree children: (list (new Tree-Node title: first) (new Tree-Label title: second) (new Tree-Label title: (or note ""))) user-data: entry)))
-                    (sort di<? entries key: first))))
-      (set-title~ (locate 'primary) (case language ((primary) "French") ((secondary) "Arabic")))
-      (set-title~ (locate 'secondary) (case language ((primary) "Arabic") ((secondary) "French")))))
+                        (add-row~ tree children: (list (new Tree-Node title: primary) (new Tree-Label title: secondary) (new Tree-Label title: note)) user-data: entry)))
+                    (sort di<? entries key: get-primary~))))
+      (let ((primary (get-primary~ dictionary))
+            (secondary (get-secondary~ dictionary)))
+        (set-title~ (locate 'primary) primary)
+        (set-title~ (locate 'secondary) secondary)
+        (let ((entry (locate 'entry)))
+          (set-title~ (locate~ entry 'primary-label) (format "{a}:" primary))
+          (set-title~ (locate~ entry 'secondary-label) (format "{a}:" secondary))))))
   
   
   ;;;
@@ -493,9 +483,12 @@
   ;;;
   
   
-  (method (on-language evt)
-    (set! language (get-value~ (get-sender~ evt)))
-    (setup-words))
+  (method (on-add evt)
+    )
+  
+  
+  (method (on-remove evt)
+    )
   
   
   (method (on-selection-change evt)
@@ -514,18 +507,18 @@
   
   (form
     (<install>
-      (<Label-View>                                 title: "French:" position: {Point 0 2} size: {Dimension 40 16} font: {Font Label})
-      (<Border-View>                                                 position: {Point 46 0} size: {Dimension 200 19} border-type: edge style: entry
+      (<Label-View>                   name: primary-label            position: {Point 0 2} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                 position: {Point 46 0} size: {Dimension 300 19} border-type: edge style: entry
         (<Scroller-View>                                             hscroll?: #f vscroll?: #f
           (<!>                        name: content                  layout-type: fill
             (<Kalima-Entry-Text-View> name: primary))))
-      (<Label-View>                                 title: "Arabic:" position: {Point 0 32} size: {Dimension 40 16} font: {Font Label})
-      (<Border-View>                                                 position: {Point 46 30} size: {Dimension 200 19} border-type: edge style: entry
+      (<Label-View>                   name: secondary-label          position: {Point 0 32} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                 position: {Point 46 30} size: {Dimension 300 19} border-type: edge style: entry
         (<Scroller-View>                                             hscroll?: #f vscroll?: #f
           (<!>                        name: content                  layout-type: fill
             (<Kalima-Entry-Text-View> name: secondary))))
-      (<Label-View>                                 title: "Note:"   position: {Point 0 63} size: {Dimension 40 16} font: {Font Label})
-      (<Border-View>                                                 position: {Point 46 60} size: {Dimension 200 19} border-type: edge style: entry
+      (<Label-View>                                   title: "Note:" position: {Point 0 63} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                 position: {Point 46 60} size: {Dimension 300 19} border-type: edge style: entry
         (<Scroller-View>                                             hscroll?: #f vscroll?: #f
           (<!>                        name: content                  layout-type: fill
             (<Kalima-Entry-Text-View> name: note))))))
@@ -537,7 +530,7 @@
           (note (get-note~ entry)))
       (set-string-content~ (locate 'primary) primary)
       (set-string-content~ (locate 'secondary) secondary)
-      (set-string-content~ (locate 'note) (or note "")))))
+      (set-string-content~ (locate 'note) note))))
 
 
 ;;;

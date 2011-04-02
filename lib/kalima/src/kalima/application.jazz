@@ -13,10 +13,12 @@
         (jazz.io)
         (jazz.jml)
         (jazz.library)
+        (jazz.locale)
         (jazz.platform)
         (jazz.system)
         (jazz.system.application)
         (jazz.ui)
+        (jazz.ui.dialog)
         (jazz.ui.view)
         (kalima)
         (kalima.ui))
@@ -34,8 +36,35 @@
     "Kalima")
   
   
+  (method override (process-owner)
+    "Guillaume Cartier")
+  
+  
+  (method override (process-copyright)
+    "2010-2011")
+  
+  
+  (method override (process-icon)
+    "Doc")
+  
+  
+  (method override (process-version)
+    {Version 1 0 0})
+  
+  
+  (method override (process-email)
+    "gucartier@gmail.com")
+  
+  
   (method override (new-toplevel)
     (new Kalima-Toplevel))
+  
+  
+  (method override (initialize-settings)
+    (let ((file {File Home ".kalima" ".settings"}))
+      (when (not (exists?~ file))
+        (create~ file))
+      (set! settings (new Settings file: file))))
   
   
   (method override (default-preferences)
@@ -48,6 +77,19 @@
   
   (method override (default-bindings)
     (new Kalima-Bindings))
+  
+  
+  (method override (finish-process)
+    (define (reopen-dictionary)
+      (let ((file (get-setting~ settings 'dictionary #f)))
+        (when file
+          (if (exists?~ file)
+              (open-dictionary-file file)
+            (message-box (format "Unable to find dictionary: {a}" (parse~ file)))))))
+    
+    (nextmethod)
+    (reopen-dictionary)
+    (update-kalima-actions))
 
   
   ;;;
@@ -68,6 +110,18 @@
   ;;;
   ;;;; Events
   ;;;
+
+
+  (method (on-new-dictionary evt)
+    (new-dictionary))
+    
+
+  (method (on-open-dictionary evt)
+    (open-dictionary))
+  
+  
+  (method (on-close-dictionary evt)
+    (close-dictionary))
   
   
   (method (on-dictionary evt)
@@ -83,8 +137,63 @@
   
   
   (method (on-test evt)
-    (save-dictionary (load-dictionary arabic-dic) {File Home ".kalima" "dictionaries" "foo.dic"})
-    (user-message "Saved")))
+    )
+
+  
+  ;;;
+  ;;;; Actions
+  ;;;
+  
+  
+  (method override (class-actions)
+    (cons (find-actions 'kalima)
+          (nextmethod)))
+  
+  
+  (method public (update-kalima-actions)
+    (let ((dictionary (get-current-dictionary)))
+      (set-action-enabled? {Action kalima close} dictionary)
+      (set-action-enabled? {Action kalima dictionary} dictionary)
+      (set-action-enabled? {Action kalima lesson} dictionary)
+      (set-action-enabled? {Action kalima edit} dictionary)))
+
+  
+  ;;;
+  ;;;; Dictionary
+  ;;;
+  
+  
+  (method (new-dictionary)
+    )
+  
+  
+  (definition Dictionary-Extensions
+    '(("Dictionaries" . "dic")))
+  
+  
+  (method (open-dictionary)
+    (let ((directory (or (get-setting~ settings 'current-directory #f) {Directory Home ".kalima" "dictionaries"})))
+      (let ((file (choose-file directory: directory extensions: Dictionary-Extensions)))
+        (close-dictionary)
+        (open-dictionary-file file)
+        (update-kalima-actions))))
+  
+  
+  (method (open-dictionary-file file)
+    (set-current-dictionary (load-dictionary file))
+    (set-setting~ settings 'dictionary file)
+    (save-content~ settings)
+    (set-caption-base~ (get-toplevel) (format "Kalima {a}" (capitalize (get-base~ file)))))
+  
+  
+  (method (close-dictionary)
+    (let ((dictionary (get-current-dictionary)))
+      (when dictionary
+        (save~ dictionary)
+        (set-current-dictionary #f)))
+    (close-all)
+    (set-caption-base~ (get-toplevel) "Kalima")
+    (update-kalima-actions)))
 
 
 ;;;
@@ -153,10 +262,13 @@
   
   (form
     (<install>
-      (<Action-Item> name: dictionary action-handler: {Event-Handler :application on-dictionary})
-      (<Action-Item> name: lesson     action-handler: {Event-Handler :application on-lesson})
-      (<Action-Item> name: edit       action-handler: {Event-Handler :application on-edit})
-      (<Action-Item> name: test       action-handler: {Event-Handler :application on-test}))))
+      (<Action-Item> name: new        action-handler: {Event-Handler :application on-new-dictionary} shortcut: {Shortcut :control :alt #\N})
+      (<Action-Item> name: open       action-handler: {Event-Handler :application on-open-dictionary} shortcut: {Shortcut :control :alt #\O})
+      (<Action-Item> name: close      action-handler: {Event-Handler :application on-close-dictionary} shortcut: {Shortcut :control :alt #\W})
+      (<Action-Item> name: dictionary action-handler: {Event-Handler :application on-dictionary} shortcut: {Shortcut :control :shift #\D})
+      (<Action-Item> name: lesson     action-handler: {Event-Handler :application on-lesson} shortcut: {Shortcut :control :shift #\L})
+      (<Action-Item> name: edit       action-handler: {Event-Handler :application on-edit} shortcut: {Shortcut :control :shift #\E})
+      (<Action-Item> name: test       action-handler: {Event-Handler :application on-test} shortcut: {Shortcut :shift #\T}))))
 
 
 ;;;
@@ -183,10 +295,60 @@
     (nextmethod rest)
     (with-update-locked
       (lambda ()
-        (new Label-Item parent: self name: 'file   content: (new File-Base-Menu))
+        (new Label-Item parent: self name: 'file   content: (new Kalima-File-Menu))
         (new Label-Item parent: self name: 'edit   content: (new Edit-Base-Menu))
-        (new Label-Item parent: self name: 'window content: (new Window-Menu))
+        (new Label-Item parent: self name: 'kalima content: (new Kalima-Menu))
+        (new Label-Item parent: self name: 'window content: (new Kalima-Window-Menu))
         (new Label-Item parent: self name: 'help   content: (new Help-Menu))))))
+
+
+;;;
+;;;; File-Menu
+;;;
+
+
+(class Kalima-File-Menu extends Menu
+  
+  
+  (form
+    (<install>           title: {Locales english: "File" french: "Fichier"}
+      (<Label-Item>      title: {Locales english: "New Dictionary" french: "Nouveau Dictionnaire"} icon: {Image-Resource "New"} action-handler: {Action kalima new})
+      (<Label-Item>      title: {Locales english: "Open Dictionary..." french: "Ouvrir Dictionnaire..."} icon: {Image-Resource "Open"} action-handler: {Action kalima open})
+      (<Label-Item>      title: {Locales english: "Close Dictionary" french: "Fermer Dictionnaire"} action-handler: {Action kalima close})
+      (<Separator-Item>)
+      (<Label-Item>      title: {Locales english: "Quit" french: "Quitter"} action-handler: {Action application exit}))))
+
+
+;;;
+;;;; Kalima-Menu
+;;;
+
+
+(class Kalima-Menu extends Menu
+  
+  
+  (form
+    (<install>           title: "Kalima"
+      (<Label-Item>      title: {Locales english: "Dictionary" french: "Dictionnaire"} icon: {Image-Resource "Doc"} action-handler: {Action kalima dictionary})
+      (<Label-Item>      title: {Locales english: "Lesson" french: "Leçon"} icon: {Image-Resource "Pad"} action-handler: {Action kalima lesson})
+      (<Label-Item>      title: {Locales english: "Edit" french: "Éditer"} icon: {Image-Resource "WorkspaceText"} action-handler: {Action kalima edit}))))
+
+
+;;;
+;;;; Window-Menu
+;;;
+
+
+(class Kalima-Window-Menu extends Window-Menu
+  
+  
+  (form
+    (<install>
+      (<!> name: zoom-separator    visible?: #f)
+      (<!> name: zoom-horizontally visible?: #f)
+      (<!> name: zoom-vertically   visible?: #f)
+      (<!> name: maximize/restore  visible?: #f)
+      (<!> name: full-screen       visible?: #f))))
 
 
 ;;;
@@ -212,9 +374,8 @@
 
   (form
     (<install>
-      (<Action-Icon> name: new        tooltip-text: "New" resource: {Image-Resource "New"} action-handler: {Action application new})
-      (<Action-Icon> name: open       tooltip-text: "Open" resource: {Image-Resource "Open"} action-handler: {Action application open})
-      (<Action-Icon> name: save       tooltip-text: "Save" resource: {Image-Resource "Save"} action-handler: {Action guest save})
+      (<Action-Icon> name: new        tooltip-text: "New Dictionary" resource: {Image-Resource "New"} action-handler: {Action kalima new})
+      (<Action-Icon> name: open       tooltip-text: "Open Dictionary" resource: {Image-Resource "Open"} action-handler: {Action kalima open})
       (<Separator>)
       (<Action-Icon> name: cut        tooltip-text: "Cut" resource: {Image-Resource "Cut"} action-handler: {Action view cut})
       (<Action-Icon> name: copy       tooltip-text: "Copy" resource: {Image-Resource "Copy"} action-handler: {Action view copy})
@@ -228,7 +389,9 @@
       (<Action-Icon> name: lesson     tooltip-text: "Lesson" resource: {Image-Resource "Pad"} action-handler: {Action kalima lesson})
       (<Separator>)
       (<Action-Icon> name: edit       tooltip-text: "Edit" resource: {Image-Resource "WorkspaceText"} action-handler: {Action kalima edit})
+      @wait
       (<Separator>)
+      @wait
       (<Action-Icon> name: test       tooltip-text: "Test" resource: {Image-Resource "Execute"} action-handler: {Action kalima test}))))
 
 

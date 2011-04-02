@@ -15,17 +15,29 @@
 
 
 ;;;
-;;;; Dictionaries
+;;;; Dictionary
 ;;;
 
 
-(definition protected arabic-dic
-  {File Home ".kalima" "dictionaries" "arabic.dic"})
+(definition public *current-dictionary*
+  #f)
+
+(definition public (get-current-dictionary)
+  *current-dictionary*)
+
+(definition public (set-current-dictionary dictionary)
+  (set! *current-dictionary* dictionary))
 
 
 (definition public (load-dictionary file)
   (call-with-input-file (path-settings file char-encoding: 'UTF)
     (lambda (port)
+      (define (read-dictionary)
+        (let ((properties (read port)))
+          (let ((primary (getf properties primary:))
+                (secondary (getf properties secondary:)))
+            (new Kalima-Dictionary file primary secondary))))
+      
       (define (read-entries dictionary)
         (let ((entries (read port)))
           (for-each (lambda (entry)
@@ -41,7 +53,7 @@
                 (add-theme~ dictionary (new Kalima-Theme dictionary subject references)))
               (iter)))))
         
-      (let ((dictionary (new Kalima-Dictionary)))
+      (let ((dictionary (read-dictionary)))
         (read-entries dictionary)
         (read-themes dictionary)
         dictionary))))
@@ -51,16 +63,19 @@
   (call-with-output-file (path-settings file char-encoding: 'UTF)
     (lambda (port)
       (define (print-dictionary)
-        (print-header "Arabic")
-        (print-entries (get-entries~ dictionary))
-        (print-themes (get-themes~ dictionary)))
+        (let ((primary (get-primary~ dictionary))
+              (secondary (get-secondary~ dictionary)))
+          (print-header secondary)
+          (format port "(primary: \"{a}\" secondary: \"{a}\"){%}{%}{%}" primary secondary)
+          (print-entries (get-entries~ dictionary))
+          (print-themes (get-themes~ dictionary))))
       
       (define (print-entries entries)
         (format port "(")
         (let ((all (sort di<? (table-values entries) key: get-primary~)))
           (loop (for entry in all remainder remain)
                 (print-entry entry (null? remain))))
-        (format port "){%}{%}{%}"))
+        (format port "){%}"))
       
       (define (print-entry entry last?)
         (let ((primary (get-primary~ entry))
@@ -71,8 +86,10 @@
           (format port "{%} ")))
       
       (define (print-themes themes)
-        (loop (for theme in themes remainder remain)
-              (print-theme theme (null? remain))))
+        (when (not-null? themes)
+          (format port "{%}{%}")
+          (loop (for theme in themes remainder remain)
+                (print-theme theme (null? remain)))))
       
       (define (print-theme theme last?)
         (let ((subject (get-subject~ theme)))
@@ -91,8 +108,7 @@
         (format port ";;;; {a}{%}" title)
         (format port ";;;{%}{%}{%}"))
       
-      (print-dictionary)
-      (user-message "Dictionary saved to {a}" (parse~ file)))))
+      (print-dictionary))))
 
 
 ;;;
@@ -103,14 +119,30 @@
 (class Kalima-Dictionary extends Object
   
   
-  (slot entries getter generate)
-  (slot themes  getter generate)
+  (slot file      getter generate)
+  (slot primary   getter generate)
+  (slot secondary getter generate)
+  (slot entries   getter generate)
+  (slot themes    getter generate)
   
   
-  (method override (initialize)
+  (method override (initialize file primary secondary)
     (nextmethod)
-    (set! entries (make-table test: equal?))
-    (set! themes '()))
+    (set! file~self file)
+    (set! primary~self primary)
+    (set! secondary~self secondary)
+    (set! entries~self (make-table test: equal?))
+    (set! themes~self '()))
+  
+  
+  (method public (save)
+    (if (not file)
+        (save-as)
+      (save-dictionary self file)))
+  
+  
+  (method public (save-as)
+    )
   
   
   (method public (get-entry key)

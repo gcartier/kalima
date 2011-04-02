@@ -10,4 +10,4 @@
 
 
 (form
-  (<Jazz-Project> name: Kalima directory: {Directory Projects} product: kalima)))
+  (<Jazz-Project> name: Kalima directory: {Directory :context "../.."} configuration: "build/release" product: kalima)))
