@@ -1,0 +1,27 @@
+(package kalima
+  
+  (root "src")
+  (products (kalima (title "Kalima")
+                       (run kalima.run)
+                       (update kalima.application
+                               kalima.run)
+                       (build (kalima))
+                       (dependencies jazz
+                                     jazz.debuggee
+                                     jazz.designer
+                                     jazz.editor.jazz
+                                     jazz.graphic
+                                     jazz.io
+                                     jazz.jml
+                                     jazz.jrm
+                                     jazz.library
+                                     jazz.media
+                                     jazz.network
+                                     jazz.platform
+                                     jazz.profile
+                                     jazz.system
+                                     jazz.ui
+                                     contrib.irregex
+                                     srfi-19
+                                     profiler)))
+  (project ".project"))

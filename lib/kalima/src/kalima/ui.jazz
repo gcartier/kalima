@@ -1,0 +1,560 @@
+;;;==============
+;;;  JazzScheme
+;;;==============
+;;;
+;;;; Kalima UI
+;;;
+
+
+(module kalima.ui jazz
+
+
+(import (jazz.editor.jazz)
+        (jazz.graphic)
+        (jazz.io)
+        (jazz.jml)
+        (jazz.library)
+        (jazz.locale)
+        (jazz.ui)
+        (kalima))
+
+
+(define-font Kalima font-name: "Times New Roman" point-size: 36)
+
+
+;;;
+;;;; Lesson
+;;;
+
+
+(class Kalima-Lesson-View extends Layout-View
+  
+  
+  (method meta override (host-icon)
+    {Image-Resource "Pad"})
+  
+  (method meta override (host-title)
+    "Arabic Lesson")
+  
+  (method meta override (host-size)
+    {Dimension 800 500})
+  
+  
+  (slot dictionary initialize #f)
+  (slot entries    initialize #f)
+  (slot entry      initialize #f)
+  (slot ask        initialize #f)
+  (slot language   initialize #f)
+  (slot stage      initialize #f)
+  (slot right      initialize #f)
+  (slot wrong      initialize #f)
+  (slot review     initialize #f)
+  
+  
+  (form
+    (<install>                                           layout-type: border
+      (<Layout-View>                    name: toolbar    size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
+        (<Border-View>                                   size: {Dimension 60 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
+          (<Border-View>                                 border-color: {Color Entry-Border}
+            (<Combo-Box>                name: select     content-change-handler: {Event-Handler :document on-select})))
+        (<Separator-View>                                size: {Dimension 4 0})
+        (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
+          (<Border-View>                                 border-color: {Color Entry-Border}
+            (<Combo-Box>                name: ask        content-change-handler: {Event-Handler :document on-ask})))
+        (<Separator>                                     size: {Dimension 8 0})
+        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Review" resource: {Image-Resource "Edit"} portfolio: :images action-handler: {Event-Handler :form on-review}))
+      (<Border-View>                                     location: center border-type: edge style: entry
+        (<Splitter-View>                                 background: {Color White} orientation: horz division: 125
+          (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
+            (<!>                        name: content    layout-type: fill
+              (<Tree-View>              name: subjects   multiple-selection?: #t portfolio: :images
+                (<Tree-Node-Column>                      title: "Subject" display-images?: #f toplevel-controls?: #f width: 419))))
+          (<Layout-View>                                 location: second layout-type: border
+            (<Layout-View>                               location: center layout-type: center
+              (<Label-View>             name: entry      size: {Dimension 600 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry}))
+            (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 4 0}
+              (<Layout-View>                             layout-type: border
+                (<Label-View>           name: note       size: {Dimension 100 20} location: west)
+                (<Label-View>           name: statistics size: {Dimension 250 20} location: east justification: tail))))))))
+  
+  
+  (method override (finish rest)
+    (nextmethod rest)
+    (random-seed)
+    (setup))
+  
+  
+  ;;;
+  ;;;; Setup
+  ;;;
+  
+  
+  (method (setup)
+    (define (setup-select)
+      (let ((combo (locate 'select)))
+        (set-choices~ combo '((none "None") (all "All")))
+        (set-value~ combo 'all)))
+    
+    (define (setup-ask)
+      (let ((combo (locate 'ask)))
+        (set-choices~ combo '((primary "French") (secondary "Arabic") (:random "Random")))
+        (set-value~ combo 'primary)))
+    
+    (define (setup-subjects)
+      (define (collect-subjects)
+        (let ((queue (new-queue)))
+          (for-each (lambda (theme)
+                      (let ((subject (get-subject~ theme)))
+                        (enqueue queue (cons subject theme))))
+                    (get-themes~ dictionary))
+          (sort di<? (queue-list queue) key: car)))
+      
+      (let ((tree (locate 'subjects)))
+        (remove-every-row~ tree)
+        (with-update-locked~ tree
+          (lambda ()
+            (for-each (lambda (info)
+                        (bind (subject . theme) info
+                          (let ((handler (new Event-Handler execute: (lambda (evt) (subjects-update)))))
+                            (let ((node (new Check-Box title: subject checked?: #t content-change-handler: handler)))
+                              (add-row~ tree children: (list node) user-data: theme)))))
+                      (collect-subjects))))))
+    
+    (set! dictionary (load-dictionary arabic-dic))
+    (set! ask 'primary)
+    (setup-select)
+    (setup-ask)
+    (setup-subjects)
+    (subjects-update))
+  
+  
+  (method (subjects-update)
+    (define (collect-entries)
+      (let ((tree (locate 'subjects))
+            (entries (new-queue)))
+        (for-each-visible-row~ tree
+          (lambda (row line)
+            (let ((checkbox (first-child~ row)))
+              (when (get-checked?~ checkbox)
+                (let ((theme (get-user-data~ row)))
+                  (enqueue-list entries (get-entries~ theme)))))))
+        (queue-list entries)))
+    
+    (setup-entries (collect-entries)))
+  
+  
+  (method (setup-entries lst)
+    (set! entries lst)
+    (set! stage 'question)
+    (set! right 0)
+    (set! wrong 0)
+    (set! review '())
+    (ask-word))
+  
+  
+  ;;;
+  ;;;; Events
+  ;;;
+  
+  
+  (method (on-select evt)
+    (let ((checked? (case (get-value~ (get-sender~ evt))
+                      ((none) #f)
+                      ((all) #t)))
+          (tree (locate 'subjects)))
+      (for-each-visible-row~ tree
+        (lambda (row line)
+          (let ((checkbox (first-child~ row)))
+            (set-checked?~ checkbox checked?)))))
+    (subjects-update))
+  
+  
+  (method (on-ask evt)
+    (set! ask (get-value~ (get-sender~ evt)))
+    (ask-word))
+  
+  
+  (method (on-review evt)
+    (setup-entries review))
+  
+  
+  (method (on-entry evt)
+    (acquire-focus~ self))
+  
+  
+  (method override (key-press key)
+    (case key
+      ((#\space)
+       (wrong-answer))))
+  
+  
+  (method override (return-press key)
+    (case stage
+      ((question)
+       (show-answer))
+      ((answer)
+       (right-answer))))
+  
+  
+  (method override (tab-press key modifiers)
+    (right-answer))
+  
+  
+  ;;;
+  ;;;; Management
+  ;;;
+  
+  
+  (method (ask-word)
+    (if (null? entries)
+        (set! entry #f)
+      (set! stage 'question)
+      (set! language (if (eq? ask :random) (random-element '(primary secondary)) ask))
+      (set! entry (random-element entries)))
+    (update))
+  
+  
+  (method (show-answer)
+    (when entry
+      (set! stage 'answer)
+      (update)))
+  
+  
+  (method (right-answer)
+    (when entry
+      (increase! right)
+      (set! entries (remove entry entries))
+      (ask-word)))
+  
+  
+  (method (wrong-answer)
+    (when entry
+      (increase! wrong)
+      (unless (memq? entry review)
+        (set! review (cons entry review)))
+      (ask-word)))
+  
+  
+  ;;;
+  ;;;; Update
+  ;;;
+  
+  
+  (method (update)
+    (if (not entry)
+        (begin
+          (display "" {Color Black})
+          (display-note ""))
+      (let ((primary (get-primary~ entry))
+            (secondary (get-secondary~ entry))
+            (note (get-note~ entry)))
+        (case stage
+          ((question)
+           (case language
+             ((primary) (display primary {Color Black}))
+             ((secondary) (display secondary {Color Dark-Green}))))
+          ((answer)
+           (case language
+             ((primary) (display secondary {Color Dark-Green}))
+             ((secondary) (display primary {Color Black})))))
+        (display-note (or note ""))))
+    (statistics))
+  
+  
+  (method (display text color)
+    (let ((label (locate 'entry)))
+      (set-color~ label color)
+      (set-title~ label text)))
+  
+  
+  (method (display-note text)
+    (let ((label (locate 'note)))
+      (set-title~ label text)))
+  
+  
+  (method (statistics)
+    (let ((label (locate 'statistics)))
+      (set-title~ label (format "Right: {a}, wrong: {a}, remaining: {a}" right wrong (length entries))))))
+
+
+;;;
+;;;; Dictionary
+;;;
+
+
+(class Kalima-Dictionary-View extends Layout-View
+  
+  
+  (method meta override (host-icon)
+    {Image-Resource "Doc"})
+  
+  (method meta override (host-title)
+    "Arabic Dictionary")
+  
+  (method meta override (host-size)
+    {Dimension 800 500})
+  
+  
+  (slot dictionary initialize #f)
+  (slot themes     initialize #f)
+  (slot entries    initialize #f)
+  (slot entry      initialize #f)
+  (slot language   initialize #f)
+  
+  
+  (form
+    (<install>                                           layout-type: border
+      (<Layout-View>                    name: toolbar    size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
+        (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
+          (<Border-View>                                 border-color: {Color Entry-Border}
+            (<Combo-Box>                name: language   content-change-handler: {Event-Handler :document on-language}))))
+      (<Border-View>                                     location: center border-type: edge style: entry
+        (<Splitter-View>                                 background: {Color White} orientation: horz division: 175
+          (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
+            (<!>                        name: content    layout-type: fill
+              (<Tree-View>              name: entries    portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
+                (<Tree-Node-Column>                      title: "Word" display-images?: #f toplevel-controls?: #f width: 419))))
+          (<Layout-View>                                 location: second layout-type: border
+            (<Layout-View>                               location: center layout-type: center
+              (<Label-View>             name: entry      size: {Dimension 600 50} justification: center font: {Font Kalima}))
+            (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
+              (<Label-View>             name: note)))))))
+  
+  
+  (method override (finish rest)
+    (nextmethod rest)
+    (setup))
+  
+  
+  ;;;
+  ;;;; Setup
+  ;;;
+  
+  
+  (method (setup)
+    (define (setup-language)
+      (let ((combo (locate 'language)))
+        (set-choices~ combo '((primary "French") (secondary "Arabic")))
+        (set-value~ combo 'primary)))
+    
+    (set! dictionary (load-dictionary arabic-dic))
+    (set! entries (collect-entries~ dictionary))
+    (set! language 'primary)
+    (setup-language)
+    (setup-words))
+  
+  
+  (method (setup-words)
+    (let ((tree (locate 'entries))
+          (getter (case language
+                    ((primary) get-primary~)
+                    ((secondary) get-secondary~))))
+      (remove-every-row~ tree)
+      (with-update-locked~ tree
+        (lambda ()
+          (for-each (lambda (entry)
+                      (let ((title (getter entry)))
+                        (add-row~ tree children: (list (new Tree-Node title: title)) user-data: entry)))
+                    (sort di<? entries key: getter))))))
+  
+  
+  ;;;
+  ;;;; Events
+  ;;;
+  
+  
+  (method (on-language evt)
+    (set! language (get-value~ (get-sender~ evt)))
+    (setup-words)
+    (display "" {Color Black})
+    (display-note ""))
+  
+  
+  (method (on-selection-change evt)
+    (let ((tree (get-sender~ evt)))
+      (let ((entry (get-single-selected-data~ tree)))
+        (let ((title (case language
+                       ((primary) (get-secondary~ entry))
+                       ((secondary) (get-primary~ entry))))
+              (note (get-note~ entry)))
+          (display title (case language
+                           ((primary) {Color Dark-Green})
+                           ((secondary) {Color Black})))
+          (display-note (or note ""))))))
+  
+  
+  ;;;
+  ;;;; Update
+  ;;;
+  
+  
+  (method (display text color)
+    (let ((label (locate 'entry)))
+      (set-color~ label color)
+      (set-title~ label text)))
+  
+  
+  (method (display-note text)
+    (let ((label (locate 'note)))
+      (set-title~ label text))))
+
+
+;;;
+;;;; Edit
+;;;
+
+
+(class Kalima-Edit-View extends Layout-View
+  
+  
+  (method meta override (host-icon)
+    {Image-Resource "WorkspaceText"})
+  
+  (method meta override (host-title)
+    "Arabic Editor")
+  
+  (method meta override (host-size)
+    {Dimension 800 500})
+  
+  
+  (slot dictionary initialize #f)
+  (slot themes     initialize #f)
+  (slot entries    initialize #f)
+  (slot entry      initialize #f)
+  (slot language   initialize #f)
+  
+  
+  (form
+    (<install>                                           layout-type: border
+      (<Layout-View>                    name: toolbar    size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
+        (<Border-View>                                   size: {Dimension 120 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
+          (<Border-View>                                 border-color: {Color Entry-Border}
+            (<Combo-Box>                name: language   content-change-handler: {Event-Handler :document on-language})))
+        (<Separator>                                     size: {Dimension 12 0})
+        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Add Entry" resource: {Image-Resource "Add"} portfolio: :images action-handler: {Event-Handler :form on-add})
+        (<Separator>                                     size: {Dimension 4 0})
+        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Remove Entry" resource: {Image-Resource "Remove"} portfolio: :images action-handler: {Event-Handler :form on-remove}))
+      (<Border-View>                                     location: center border-type: edge style: entry
+        (<Splitter-View>                                 background: {Color White} orientation: vert division: 205
+          (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
+            (<!>                         name: content   layout-type: fill
+              (<Tree-Header>                             style: document
+                (<!>                     name: content
+                  (<Tree-View>           name: entries   filled-column: note portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
+                    (<Tree-Node-Column>  name: primary   title: "French" display-images?: #f toplevel-controls?: #f width: 175)
+                    (<Tree-Label-Column> name: secondary title: "Arabic" width: 175)
+                    (<Tree-Label-Column> name: note      title: "Note"))))))
+          (<Layout-View>                                 location: second layout-type: center
+            (<Kalima-Entry-View>         name: entry     size: {Dimension 250 100} location: center))))))
+  
+  
+  (method override (finish rest)
+    (nextmethod rest)
+    (setup))
+  
+  
+  ;;;
+  ;;;; Setup
+  ;;;
+  
+  
+  (method (setup)
+    (define (setup-language)
+      (let ((combo (locate 'language)))
+        (set-choices~ combo '((primary "French") (secondary "Arabic")))
+        (set-value~ combo 'primary)))
+    
+    (set! dictionary (load-dictionary arabic-dic))
+    (set! entries (collect-entries~ dictionary))
+    (set! language 'primary)
+    (setup-language)
+    (setup-words))
+  
+  
+  (method (setup-words)
+    (let ((tree (locate 'entries))
+          (first (case language ((primary) get-primary~) ((secondary) get-secondary~)))
+          (second (case language ((primary) get-secondary~) ((secondary) get-primary~))))
+      (remove-every-row~ tree)
+      (with-update-locked~ tree
+        (lambda ()
+          (for-each (lambda (entry)
+                      (let ((first (first entry))
+                            (second (second entry))
+                            (note (get-note~ entry)))
+                        (add-row~ tree children: (list (new Tree-Node title: first) (new Tree-Label title: second) (new Tree-Label title: (or note ""))) user-data: entry)))
+                    (sort di<? entries key: first))))
+      (set-title~ (locate 'primary) (case language ((primary) "French") ((secondary) "Arabic")))
+      (set-title~ (locate 'secondary) (case language ((primary) "Arabic") ((secondary) "French")))))
+  
+  
+  ;;;
+  ;;;; Events
+  ;;;
+  
+  
+  (method (on-language evt)
+    (set! language (get-value~ (get-sender~ evt)))
+    (setup-words))
+  
+  
+  (method (on-selection-change evt)
+    (let ((tree (get-sender~ evt)))
+      (let ((entry (get-single-selected-data~ tree)))
+        (set-entry~ (locate 'entry) entry)))))
+
+
+;;;
+;;;; Entry
+;;;
+
+
+(class Kalima-Entry-View extends View
+  
+  
+  (form
+    (<install>
+      (<Label-View>                                 title: "French:" position: {Point 0 2} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                 position: {Point 46 0} size: {Dimension 200 19} border-type: edge style: entry
+        (<Scroller-View>                                             hscroll?: #f vscroll?: #f
+          (<!>                        name: content                  layout-type: fill
+            (<Kalima-Entry-Text-View> name: primary))))
+      (<Label-View>                                 title: "Arabic:" position: {Point 0 32} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                 position: {Point 46 30} size: {Dimension 200 19} border-type: edge style: entry
+        (<Scroller-View>                                             hscroll?: #f vscroll?: #f
+          (<!>                        name: content                  layout-type: fill
+            (<Kalima-Entry-Text-View> name: secondary))))
+      (<Label-View>                                 title: "Note:"   position: {Point 0 63} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                 position: {Point 46 60} size: {Dimension 200 19} border-type: edge style: entry
+        (<Scroller-View>                                             hscroll?: #f vscroll?: #f
+          (<!>                        name: content                  layout-type: fill
+            (<Kalima-Entry-Text-View> name: note))))))
+  
+  
+  (method (set-entry entry)
+    (let ((primary (get-primary~ entry))
+          (secondary (get-secondary~ entry))
+          (note (get-note~ entry)))
+      (set-string-content~ (locate 'primary) primary)
+      (set-string-content~ (locate 'secondary) secondary)
+      (set-string-content~ (locate 'note) (or note "")))))
+
+
+;;;
+;;;; Entry-Text
+;;;
+
+
+(class Kalima-Entry-Text-View extends Plain-Text-View
+  
+  
+  (form
+    (<install> base-style: {Text-Style Text-User} accepts-returns?: #f left-padding: 2 top-padding: 2 show-unfocused-selection?: #f focus-selects-all?: #t return-press-handler: {Event-Handler :form on-return-press})))
+
+
+;;;
+;;;; Text
+;;;
+
+
+(class Kalima-Text-View extends Jazz-Plain-Text-View))

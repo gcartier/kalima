@@ -1,0 +1,245 @@
+;;;==============
+;;;  JazzScheme
+;;;==============
+;;;
+;;;; Kalima
+;;;
+
+
+(module kalima.application jazz
+
+
+(import (jazz.debuggee)
+        (jazz.io)
+        (jazz.jml)
+        (jazz.library)
+        (jazz.platform)
+        (jazz.system)
+        (jazz.system.application)
+        (jazz.ui)
+        (jazz.ui.view)
+        (kalima)
+        (kalima.ui))
+
+
+;;;
+;;;; Application
+;;;
+
+
+(class Kalima-Application extends Application
+
+  
+  (method override (process-name)
+    "Kalima")
+  
+  
+  (method override (new-toplevel)
+    (new Kalima-Toplevel))
+  
+  
+  (method override (default-preferences)
+    (new Kalima-Preferences))
+  
+  
+  (method override (default-workspaces)
+    (new Kalima-Workspaces))
+  
+  
+  (method override (default-bindings)
+    (new Kalima-Bindings))
+
+  
+  ;;;
+  ;;;; Frames
+  ;;;
+
+
+  (method override (default-frame-class)
+    Kalima-Lesson-View)
+
+
+  (method override (known-extension-frame-class ext)
+    (cond ((member? ext '("txt" "text") test: extension=?) Plain-Text-View)
+          ((member? ext '("dic") test: extension=?) Kalima-Text-View)
+          (else (nextmethod ext))))
+
+  
+  ;;;
+  ;;;; Events
+  ;;;
+  
+  
+  (method (on-dictionary evt)
+    (new-frame Kalima-Dictionary-View))
+  
+  
+  (method (on-lesson evt)
+    (new-frame Kalima-Lesson-View))
+  
+  
+  (method (on-edit evt)
+    (new-frame Kalima-Edit-View))
+  
+  
+  (method (on-test evt)
+    (save-dictionary (load-dictionary arabic-dic) {File Home ".kalima" "dictionaries" "foo.dic"})
+    (user-message "Saved")))
+
+
+;;;
+;;;; Preferences
+;;;
+
+
+(class Kalima-Preferences extends Application-Preferences
+  
+  
+  (form
+    (<install>                                     toolbar-classes: ((:menubar . {Reference Kalima-Menubar}) (:toolbar . {Reference Kalima-Toolbar}) (:status . {Reference Kalima-Status}))
+      (<documents~>
+        (<Plain-Text-Preferences> name: plain-text)))))
+
+
+;;;
+;;;; Workspaces
+;;;
+
+
+(class Kalima-Workspaces extends Workspaces-Preferences
+  
+  
+  (form
+    (<install>                          active: home
+      (<Kalima-Workspace> name: home))))
+
+
+;;;
+;;;; Workspace
+;;;
+
+
+(class Kalima-Workspace extends Workspace-Preferences
+  
+  
+  (form
+    (<install>                                    title: "Home" icon: {Image-Resource "WorkspaceHome"}
+      (<Menubar-Preferences>        name: menubar location: root
+        (<Mainbar-Preferences>      name: toolbar location: second
+          (<Status-Preferences>     name: status  location: second
+            (<Stage-Preferences>    name: top     location: first)))))))
+
+
+;;;
+;;;; Bindings
+;;;
+
+
+(class Kalima-Bindings extends Application-Bindings
+  
+  
+  (form
+    (<install>
+      (<Kalima-Actions> name: kalima))))
+
+
+;;;
+;;;; Actions
+;;;
+
+
+(class Kalima-Actions extends Actions
+  
+  
+  (form
+    (<install>
+      (<Action-Item> name: dictionary action-handler: {Event-Handler :application on-dictionary})
+      (<Action-Item> name: lesson     action-handler: {Event-Handler :application on-lesson})
+      (<Action-Item> name: edit       action-handler: {Event-Handler :application on-edit})
+      (<Action-Item> name: test       action-handler: {Event-Handler :application on-test}))))
+
+
+;;;
+;;;; Toplevel
+;;;
+
+
+(class Kalima-Toplevel extends Toplevel
+
+
+  (form
+    (<install> caption-base: "Kalima" size: {Dimension 850 550})))
+
+
+;;;
+;;;; Menubar
+;;;
+
+
+(class Kalima-Menubar extends Menubar
+  
+  
+  (method override (install rest)
+    (nextmethod rest)
+    (with-update-locked
+      (lambda ()
+        (new Label-Item parent: self name: 'file   content: (new File-Base-Menu))
+        (new Label-Item parent: self name: 'edit   content: (new Edit-Base-Menu))
+        (new Label-Item parent: self name: 'window content: (new Window-Menu))
+        (new Label-Item parent: self name: 'help   content: (new Help-Menu))))))
+
+
+;;;
+;;;; Help-Menu
+;;;
+
+
+(class Help-Menu extends Menu
+  
+  
+  (form
+    (<install>          title: "Help"
+      (<Label-Item>     title: "About Kalima..." icon: {Image-Resource "About"} action-handler: {Action application about}))))
+
+
+;;;
+;;;; Toolbar
+;;;
+
+
+(class Kalima-Toolbar extends Toolbar
+
+
+  (form
+    (<install>
+      (<Action-Icon> name: new        tooltip-text: "New" resource: {Image-Resource "New"} action-handler: {Action application new})
+      (<Action-Icon> name: open       tooltip-text: "Open" resource: {Image-Resource "Open"} action-handler: {Action application open})
+      (<Action-Icon> name: save       tooltip-text: "Save" resource: {Image-Resource "Save"} action-handler: {Action guest save})
+      (<Separator>)
+      (<Action-Icon> name: cut        tooltip-text: "Cut" resource: {Image-Resource "Cut"} action-handler: {Action view cut})
+      (<Action-Icon> name: copy       tooltip-text: "Copy" resource: {Image-Resource "Copy"} action-handler: {Action view copy})
+      (<Action-Icon> name: paste      tooltip-text: "Paste" resource: {Image-Resource "Paste"} action-handler: {Action view paste})
+      (<Separator>)
+      (<Action-Icon> name: undo       tooltip-text: "Undo" resource: {Image-Resource "Undo"} action-handler: {Action view undo})
+      (<Action-Icon> name: redo       tooltip-text: "Redo" resource: {Image-Resource "Redo"} action-handler: {Action view redo})
+      (<Separator>)
+      (<Action-Icon> name: dictionary tooltip-text: "Dictionary" resource: {Image-Resource "Doc"} action-handler: {Action kalima dictionary})
+      (<Separator>)
+      (<Action-Icon> name: lesson     tooltip-text: "Lesson" resource: {Image-Resource "Pad"} action-handler: {Action kalima lesson})
+      (<Separator>)
+      (<Action-Icon> name: edit       tooltip-text: "Edit" resource: {Image-Resource "WorkspaceText"} action-handler: {Action kalima edit})
+      (<Separator>)
+      (<Action-Icon> name: test       tooltip-text: "Test" resource: {Image-Resource "Execute"} action-handler: {Action kalima test}))))
+
+
+;;;
+;;;; Status
+;;;
+
+
+(class Kalima-Status extends Status-Toolbar
+
+
+  (form
+    (<install>
+      (<Status-Label> name: message size: {Dimension 782 20} location: center)))))

@@ -1,0 +1,179 @@
+;;;==============
+;;;  JazzScheme
+;;;==============
+;;;
+;;;; Kalima
+;;;
+
+
+(module kalima jazz
+
+
+(import (jazz.io)
+        (jazz.platform)
+        (jazz.system))
+
+
+;;;
+;;;; Dictionaries
+;;;
+
+
+(definition protected arabic-dic
+  {File Home ".kalima" "dictionaries" "arabic.dic"})
+
+
+(definition public (load-dictionary file)
+  (call-with-input-file (path-settings file char-encoding: 'UTF)
+    (lambda (port)
+      (define (read-entries dictionary)
+        (let ((entries (read port)))
+          (for-each (lambda (entry)
+                      (bind (primary secondary note) entry
+                        (add-entry~ dictionary (new Kalima-Entry primary secondary note))))
+                    entries)))
+      
+      (define (read-themes dictionary)
+        (let (iter)
+          (let ((theme (read port)))
+            (unless (eof-object? theme)
+              (bind (subject . references) theme
+                (add-theme~ dictionary (new Kalima-Theme dictionary subject references)))
+              (iter)))))
+        
+      (let ((dictionary (new Kalima-Dictionary)))
+        (read-entries dictionary)
+        (read-themes dictionary)
+        dictionary))))
+
+
+(definition public (save-dictionary dictionary file)
+  (call-with-output-file (path-settings file char-encoding: 'UTF)
+    (lambda (port)
+      (define (print-dictionary)
+        (print-header "Arabic")
+        (print-entries (get-entries~ dictionary))
+        (print-themes (get-themes~ dictionary)))
+      
+      (define (print-entries entries)
+        (format port "(")
+        (let ((all (sort di<? (table-values entries) key: get-primary~)))
+          (loop (for entry in all remainder remain)
+                (print-entry entry (null? remain))))
+        (format port "){%}{%}{%}"))
+      
+      (define (print-entry entry last?)
+        (let ((primary (get-primary~ entry))
+              (secondary (get-secondary~ entry))
+              (note (or (get-note~ entry) "")))
+          (format port "(\"{a}\" \"{a}\" \"{a}\")" primary secondary note))
+        (unless last?
+          (format port "{%} ")))
+      
+      (define (print-themes themes)
+        (loop (for theme in themes remainder remain)
+              (print-theme theme (null? remain))))
+      
+      (define (print-theme theme last?)
+        (let ((subject (get-subject~ theme)))
+          (print-header subject)
+          (format port "({s}{%}" subject)
+          (loop (for reference in (get-references~ theme) remainder remain)
+                (format port " \"{a}\"" reference)
+                (unless (null? remain)
+                  (format port "{%}")))
+          (format port "){%}")
+          (unless last?
+            (format port "{%}{%}"))))
+      
+      (define (print-header title)
+        (format port ";;;{%}")
+        (format port ";;;; {a}{%}" title)
+        (format port ";;;{%}{%}{%}"))
+      
+      (print-dictionary)
+      (user-message "Dictionary saved to {a}" (parse~ file)))))
+
+
+;;;
+;;;; Kalima-Dictionary
+;;;
+
+
+(class Kalima-Dictionary extends Object
+  
+  
+  (slot entries getter generate)
+  (slot themes  getter generate)
+  
+  
+  (method override (initialize)
+    (nextmethod)
+    (set! entries (make-table test: equal?))
+    (set! themes '()))
+  
+  
+  (method public (get-entry key)
+    (table-ref entries key #f))
+  
+  
+  (method public (add-entry entry)
+    (table-set! entries (get-primary~ entry) entry))
+  
+  
+  (method public (add-theme theme)
+    (set! themes (append themes (list theme))))
+  
+  
+  (method public (collect-subjects)
+    (map get-subject~ themes))
+  
+  
+  (method public (collect-entries)
+    (table-values entries)))
+
+
+;;;
+;;;; Kalima-Theme
+;;;
+
+
+(class Kalima-Theme extends Object
+  
+  
+  (slot dictionary getter generate)
+  (slot subject    getter generate)
+  (slot references getter generate)
+  
+  
+  (method override (initialize dictionary subject references)
+    (nextmethod)
+    (set! dictionary~self dictionary)
+    (set! subject~self subject)
+    (set! references~self references))
+  
+  
+  (method public (get-entries)
+    (map (lambda (reference)
+           (get-entry~ dictionary reference))
+         references)))
+
+
+;;;
+;;;; Kalima-Entry
+;;;
+
+
+(class Kalima-Entry extends Object
+  
+  
+  (slot primary   getter generate)
+  (slot secondary getter generate)
+  (slot note      getter generate)
+  
+  
+  (method override (initialize primary secondary note)
+    (nextmethod)
+    (set! primary~self primary)
+    (set! secondary~self secondary)
+    (set! note~self note))))

@@ -1,0 +1,17 @@
+;;;==============
+;;;  JazzScheme
+;;;==============
+;;;
+;;;; Kalima Run
+;;;
+
+
+(module kalima.run jazz
+
+
+(import (kalima.application))
+
+
+(register-product-run 'kalima
+  (lambda (descriptor)
+    (boot-environment~ (new Kalima-Application)))))
