@@ -1,0 +1,3 @@
+(repository Kalima
+
+  (library "lib"))

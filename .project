@@ -1,0 +1,14 @@
+;;;==============
+;;;  JazzScheme
+;;;==============
+;;;
+;;;; Project
+;;;
+
+
+(data jazz.ide.data.project
+
+
+(form
+  (<Project> name: kalima
+    (<*>                  tag-reference: {File :context "lib" "kalima" ".project"}))))
