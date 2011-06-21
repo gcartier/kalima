@@ -52,7 +52,7 @@
               (bind (subject . references) theme
                 (add-theme~ dictionary (new Kalima-Theme dictionary subject references)))
               (iter)))))
-        
+      
       (let ((dictionary (read-dictionary)))
         (read-entries dictionary)
         (read-themes dictionary)
@@ -112,6 +112,17 @@
 
 
 ;;;
+;;;; Dictionary-Listener
+;;;
+
+
+(interface Dictionary-Listener
+  
+  
+  (method public virtual abstract (entry-change entry)))
+
+
+;;;
 ;;;; Kalima-Dictionary
 ;;;
 
@@ -124,6 +135,8 @@
   (slot secondary getter generate)
   (slot entries   getter generate)
   (slot themes    getter generate)
+  (slot listeners getter generate)
+  (slot modified? accessors generate)
   
   
   (method override (initialize file primary secondary)
@@ -132,13 +145,16 @@
     (set! primary~self primary)
     (set! secondary~self secondary)
     (set! entries~self (make-table test: equal?))
-    (set! themes~self '()))
+    (set! themes~self '())
+    (set! listeners~self '())
+    (set! modified? #f))
   
   
   (method public (save)
     (if (not file)
         (save-as)
-      (save-dictionary self file)))
+      (save-dictionary self file)
+      (set! modified? #f)))
   
   
   (method public (save-as)
@@ -146,7 +162,8 @@
   
   
   (method public (get-entry key)
-    (table-ref entries key #f))
+    (or (table-ref entries key #f)
+        (error "Unable to find entry: {a}" key)))
   
   
   (method public (add-entry entry)
@@ -162,7 +179,36 @@
   
   
   (method public (collect-entries)
-    (table-values entries)))
+    (table-values entries))
+  
+  
+  (method public (update-entry entry field content)
+    (case field
+      ((primary) (set-primary~ entry content))
+      ((secondary) (set-secondary~ entry content))
+      ((note) (set-note~ entry content)))
+    (set! modified? #t)
+    (process-entry-change entry))
+  
+  
+  ;;;
+  ;;;; Listeners
+  ;;;
+  
+  
+  (method public (add-listener listener)
+    (set! listeners (cons listener listeners)))
+  
+  
+  (method public (remove-listener listener)
+    (set! listeners (remove! listener listeners)))
+  
+  
+  (method (process-entry-change entry)
+    (when (not-null? listeners)
+      (for-each (lambda (listener)
+                  (entry-change~ listener self entry))
+                listeners))))
 
 
 ;;;
@@ -199,9 +245,9 @@
 (class Kalima-Entry extends Object
   
   
-  (slot primary   getter generate)
-  (slot secondary getter generate)
-  (slot note      getter generate)
+  (slot primary   accessors generate)
+  (slot secondary accessors generate)
+  (slot note      accessors generate)
   
   
   (method override (initialize primary secondary note)

@@ -11,4 +11,5 @@
 
 (form
   (<Project> name: kalima
+    (<*>                  tag-reference: {File :context "jazz" ".project"})
     (<*>                  tag-reference: {File :context "lib" "kalima" ".project"}))))
