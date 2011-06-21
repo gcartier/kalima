@@ -24,6 +24,182 @@
 
 
 ;;;
+;;;; Browse
+;;;
+
+
+(class Kalima-Browse-View extends Layout-View implements Dictionary-Listener
+  
+  
+  (method meta override (host-icon)
+    {Image-Resource "Doc"})
+  
+  (method meta override (host-title)
+    {Locales english: "Browse" french: "Consulter"})
+  
+  (method meta override (host-position)
+    {Point 834 25})
+  
+  (method meta override (host-size)
+    {Dimension 800 1009})
+  
+  
+  (slot dictionary initialize #f)
+  (slot themes     initialize #f)
+  (slot entries    initialize #f)
+  (slot entry      initialize #f)
+  (slot language   initialize #f)
+  
+  
+  (form
+    (<install>                                           layout-type: border
+      (<Layout-View>                    name: toolbar    size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
+        (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
+          (<Border-View>                                 border-color: {Color Entry-Border}
+            (<Combo-Box>                name: language   content-change-handler: {Event-Handler :document on-language})))
+        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Edit" resource: {Image-Resource "Script"} portfolio: :images action-handler: {Event-Handler :form on-edit})
+        (<Separator>                                     location: tail size: {Dimension 2 0}))
+      (<Border-View>                                     location: center border-type: edge style: entry
+        (<Splitter-View>                                 background: {Color White} orientation: horz division: 175
+          (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
+            (<!>                        name: content    layout-type: fill
+              (<Tree-View>              name: entries    portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
+                (<Tree-Node-Column>                      title: "Word" display-images?: #f toplevel-controls?: #f width: 419))))
+          (<Layout-View>                                 location: second layout-type: border
+            (<Layout-View>                               location: center layout-type: center
+              (<Label-View>             name: entry      size: {Dimension 600 50} justification: center font: {Font Kalima}))
+            (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
+              (<Label-View>             name: note)))))))
+  
+  
+  (method override (finish rest)
+    (nextmethod rest)
+    (setup)
+    (add-listener~ dictionary self))
+  
+  
+  (method override (destroy)
+    (remove-listener~ dictionary self)
+    (nextmethod))
+  
+  
+  ;;;
+  ;;;; Setup
+  ;;;
+  
+  
+  (method (setup)
+    (define (setup-language)
+      (let ((combo (locate 'language)))
+        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary))))
+        (set-value~ combo 'primary)))
+    
+    (set! dictionary (get-current-dictionary))
+    (set! entries (collect-entries~ dictionary))
+    (set! language 'primary)
+    (setup-language)
+    (setup-words))
+  
+  
+  (method (setup-words)
+    (let ((tree (locate 'entries))
+          (getter (case language
+                    ((primary) get-primary~)
+                    ((secondary) get-secondary~))))
+      (remove-every-row~ tree)
+      (with-update-locked~ tree
+        (lambda ()
+          (for-each (lambda (entry)
+                      (let ((title (getter entry)))
+                        (add-row~ tree children: (list (new Tree-Node title: title)) user-data: entry)))
+                    (sort di<? entries key: getter))))))
+  
+  
+  ;;;
+  ;;;; Keyboard
+  ;;;
+  
+  
+  (method override (get-tab-stops)
+    (list
+      (locate 'entries)))
+  
+  
+  ;;;
+  ;;;; Actions
+  ;;;
+  
+
+  (method override (guest-actions)
+    (cons (find-actions 'kalima-browse)
+          (nextmethod)))
+  
+  
+  ;;;
+  ;;;; Events
+  ;;;
+  
+  
+  (method (on-edit evt)
+    (if (not entry)
+        (bell)
+      (edit-entry entry 'primary)))
+  
+  
+  (method (on-language evt)
+    (set! language (get-value~ (get-sender~ evt)))
+    (setup-words)
+    (display "" {Color Black})
+    (display-note ""))
+  
+  
+  (method (on-selection-change evt)
+    (let ((tree (get-sender~ evt)))
+      (set! entry (get-single-selected-data~ tree))
+      (update)))
+  
+  
+  (method override (entry-change dictionary changed-entry)
+    (when (eq? changed-entry entry)
+      (update)))
+  
+  
+  ;;;
+  ;;;; Update
+  ;;;
+  
+  
+  (method (update)
+    (let ((title (case language
+                   ((primary) (get-secondary~ entry))
+                   ((secondary) (get-primary~ entry))))
+          (note (get-note~ entry)))
+      (display title (case language
+                       ((primary) {Color Dark-Green})
+                       ((secondary) {Color Black})))
+      (display-note note)))
+  
+  
+  (method (display text color)
+    (let ((label (locate 'entry)))
+      (set-color~ label color)
+      (set-title~ label text)))
+  
+  
+  (method (display-note text)
+    (let ((label (locate 'note)))
+      (set-title~ label text))))
+
+
+(class Kalima-Browse-Actions extends Actions
+
+
+  (form
+    (<install>
+      (<Action-Item> name: edit action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut F2}))))
+
+
+;;;
 ;;;; Study
 ;;;
 
@@ -36,6 +212,9 @@
   
   (method meta override (host-title)
     {Locales english: "Study" french: "Étudier"})
+  
+  (method meta override (host-position)
+    {Point 25 25})
   
   (method meta override (host-size)
     {Dimension 800 500})
@@ -173,6 +352,16 @@
   
   
   ;;;
+  ;;;; Actions
+  ;;;
+  
+
+  (method override (guest-actions)
+    (cons (find-actions 'kalima-study)
+          (nextmethod)))
+  
+  
+  ;;;
   ;;;; Events
   ;;;
   
@@ -201,7 +390,7 @@
   (method (on-edit evt)
     (if (not entry)
         (bell)
-      (edit-entry entry)))
+      (edit-entry entry (displayed))))
   
   
   (method (on-entry evt)
@@ -292,6 +481,16 @@
     (statistics))
   
   
+  (method (displayed)
+    (case stage
+      ((question)
+       language)
+      ((answer)
+       (case language
+         ((primary) 'secondary)
+         ((secondary) 'primary)))))
+  
+  
   (method (display text color)
     (let ((label (locate 'entry)))
       (set-color~ label color)
@@ -308,159 +507,12 @@
       (set-title~ label (format "Right: {a}, wrong: {a}, remaining: {a}" right wrong (length entries))))))
 
 
-;;;
-;;;; Browse
-;;;
+(class Kalima-Study-Actions extends Actions
 
 
-(class Kalima-Browse-View extends Layout-View implements Dictionary-Listener
-  
-  
-  (method meta override (host-icon)
-    {Image-Resource "Doc"})
-  
-  (method meta override (host-title)
-    {Locales english: "Browse" french: "Consulter"})
-  
-  (method meta override (host-size)
-    {Dimension 800 500})
-  
-  
-  (slot dictionary initialize #f)
-  (slot themes     initialize #f)
-  (slot entries    initialize #f)
-  (slot entry      initialize #f)
-  (slot language   initialize #f)
-  
-  
   (form
-    (<install>                                           layout-type: border
-      (<Layout-View>                    name: toolbar    size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
-        (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
-          (<Border-View>                                 border-color: {Color Entry-Border}
-            (<Combo-Box>                name: language   content-change-handler: {Event-Handler :document on-language})))
-        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Edit" resource: {Image-Resource "Script"} portfolio: :images action-handler: {Event-Handler :form on-edit})
-        (<Separator>                                     location: tail size: {Dimension 2 0}))
-      (<Border-View>                                     location: center border-type: edge style: entry
-        (<Splitter-View>                                 background: {Color White} orientation: horz division: 175
-          (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
-            (<!>                        name: content    layout-type: fill
-              (<Tree-View>              name: entries    portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
-                (<Tree-Node-Column>                      title: "Word" display-images?: #f toplevel-controls?: #f width: 419))))
-          (<Layout-View>                                 location: second layout-type: border
-            (<Layout-View>                               location: center layout-type: center
-              (<Label-View>             name: entry      size: {Dimension 600 50} justification: center font: {Font Kalima}))
-            (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
-              (<Label-View>             name: note)))))))
-  
-  
-  (method override (finish rest)
-    (nextmethod rest)
-    (setup)
-    (add-listener~ dictionary self))
-  
-  
-  (method override (destroy)
-    (remove-listener~ dictionary self)
-    (nextmethod))
-  
-  
-  ;;;
-  ;;;; Setup
-  ;;;
-  
-  
-  (method (setup)
-    (define (setup-language)
-      (let ((combo (locate 'language)))
-        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary))))
-        (set-value~ combo 'primary)))
-    
-    (set! dictionary (get-current-dictionary))
-    (set! entries (collect-entries~ dictionary))
-    (set! language 'primary)
-    (setup-language)
-    (setup-words))
-  
-  
-  (method (setup-words)
-    (let ((tree (locate 'entries))
-          (getter (case language
-                    ((primary) get-primary~)
-                    ((secondary) get-secondary~))))
-      (remove-every-row~ tree)
-      (with-update-locked~ tree
-        (lambda ()
-          (for-each (lambda (entry)
-                      (let ((title (getter entry)))
-                        (add-row~ tree children: (list (new Tree-Node title: title)) user-data: entry)))
-                    (sort di<? entries key: getter))))))
-  
-  
-  ;;;
-  ;;;; Keyboard
-  ;;;
-  
-  
-  (method override (get-tab-stops)
-    (list
-      (locate 'entries)))
-  
-  
-  ;;;
-  ;;;; Events
-  ;;;
-  
-  
-  (method (on-edit evt)
-    (if (not entry)
-        (bell)
-      (edit-entry entry)))
-  
-  
-  (method (on-language evt)
-    (set! language (get-value~ (get-sender~ evt)))
-    (setup-words)
-    (display "" {Color Black})
-    (display-note ""))
-  
-  
-  (method (on-selection-change evt)
-    (let ((tree (get-sender~ evt)))
-      (set! entry (get-single-selected-data~ tree))
-      (update)))
-  
-  
-  (method override (entry-change dictionary changed-entry)
-    (when (eq? changed-entry entry)
-      (update)))
-  
-  
-  ;;;
-  ;;;; Update
-  ;;;
-  
-  
-  (method (update)
-    (let ((title (case language
-                   ((primary) (get-secondary~ entry))
-                   ((secondary) (get-primary~ entry))))
-          (note (get-note~ entry)))
-      (display title (case language
-                       ((primary) {Color Dark-Green})
-                       ((secondary) {Color Black})))
-      (display-note note)))
-  
-  
-  (method (display text color)
-    (let ((label (locate 'entry)))
-      (set-color~ label color)
-      (set-title~ label text)))
-  
-  
-  (method (display-note text)
-    (let ((label (locate 'note)))
-      (set-title~ label text))))
+    (<install>
+      (<Action-Item> name: edit action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut F2}))))
 
 
 ;;;
@@ -476,6 +528,9 @@
   
   (method meta override (host-title)
     {Locales english: "Edit" french: "Éditer"})
+  
+  (method meta override (host-position)
+    {Point 25 534})
   
   (method meta override (host-size)
     {Dimension 800 500})
@@ -580,23 +635,28 @@
         (select-entry entry))))
   
   
-  (method (select-entry entry)
-    (set-entry~ (locate 'entry) entry)
-    (set! entry~self entry))
+  (method (select-entry entry (field #f))
+    (let ((entry-view (locate 'entry)))
+      (set-entry~ entry-view entry)
+      (set! entry~self entry)
+      (when field
+        (let ((text-view (locate~ entry-view field)))
+          (select-all~ text-view)
+          (acquire-focus~ text-view)))))
   
   
   (method (text-change field content)
     (update-entry~ dictionary entry field content)))
 
 
-(definition (edit-entry entry)
+(definition (edit-entry entry field)
   (let ((frame (find-frame-host Kalima-Edit-View)))
     (let ((editor (if frame
                       (begin
                         (focus-host~ frame)
                         (get-guest~ frame))
                     (get-guest~ (new-frame Kalima-Edit-View)))))
-      (select-entry~ editor entry))))
+      (select-entry~ editor entry field))))
 
 
 ;;;

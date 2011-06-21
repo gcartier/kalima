@@ -115,12 +115,12 @@
     (close-dictionary))
   
   
-  (method (on-study evt)
-    (new-frame Kalima-Study-View))
-  
-  
   (method (on-browse evt)
     (new-frame Kalima-Browse-View))
+  
+  
+  (method (on-study evt)
+    (new-frame Kalima-Study-View))
   
   
   (method (on-edit evt)
@@ -144,8 +144,8 @@
   (method public (update-kalima-actions)
     (let ((dictionary (get-current-dictionary)))
       (set-action-enabled? {Action kalima close} dictionary)
-      (set-action-enabled? {Action kalima study} dictionary)
       (set-action-enabled? {Action kalima browse} dictionary)
+      (set-action-enabled? {Action kalima study} dictionary)
       (set-action-enabled? {Action kalima edit} dictionary)))
 
 
@@ -208,7 +208,7 @@
   
   
   (form
-    (<install>                                     toolbar-classes: ((:menubar . {Reference Kalima-Menubar}) (:toolbar . {Reference Kalima-Toolbar}) (:status . {Reference Kalima-Status}))
+    (<install>                                     toplevel-state: maximized toolbar-classes: ((:menubar . {Reference Kalima-Menubar}) (:toolbar . {Reference Kalima-Toolbar}) (:status . {Reference Kalima-Status}))
       (<documents~>
         (<Plain-Text-Preferences> name: plain-text)))))
 
@@ -239,7 +239,7 @@
       (<Menubar-Preferences>        name: menubar location: root
         (<Mainbar-Preferences>      name: toolbar location: second
           (<Status-Preferences>     name: status  location: second
-            (<Stage-Preferences>    name: top     location: first)))))))
+            (<Stage-Preferences>    name: top     location: first maximized?: #f)))))))
 
 
 ;;;
@@ -252,7 +252,9 @@
   
   (form
     (<install>
-      (<Kalima-Actions> name: kalima))))
+      (<Kalima-Actions>        name: kalima)
+      (<Kalima-Browse-Actions> name: kalima-browse)
+      (<Kalima-Study-Actions>  name: kalima-study))))
 
 
 ;;;
@@ -268,8 +270,8 @@
       (<Action-Item> name: new    action-handler: {Event-Handler :application on-new-dictionary} shortcut: {Shortcut :control :alt #\N})
       (<Action-Item> name: open   action-handler: {Event-Handler :application on-open-dictionary} shortcut: {Shortcut :control :alt #\O})
       (<Action-Item> name: close  action-handler: {Event-Handler :application on-close-dictionary})
-      (<Action-Item> name: study  action-handler: {Event-Handler :application on-study} shortcut: {Shortcut :control :shift #\S})
       (<Action-Item> name: browse action-handler: {Event-Handler :application on-browse} shortcut: {Shortcut :control :shift #\B})
+      (<Action-Item> name: study  action-handler: {Event-Handler :application on-study} shortcut: {Shortcut :control :shift #\S})
       (<Action-Item> name: edit   action-handler: {Event-Handler :application on-edit} shortcut: {Shortcut :control :shift #\E})
       (<Action-Item> name: test   action-handler: {Event-Handler :application on-test} shortcut: {Shortcut :shift #\T}))))
 
@@ -335,8 +337,8 @@
   
   (form
     (<install>           title: {Locales english: "Dictionary" french: "Dictionnaire"}
-      (<Label-Item>      title: {Locales english: "Study" french: "Étudier"} icon: {Image-Resource "Pad"} action-handler: {Action kalima study})
       (<Label-Item>      title: {Locales english: "Browse" french: "Consulter"} icon: {Image-Resource "Doc"} action-handler: {Action kalima browse})
+      (<Label-Item>      title: {Locales english: "Study" french: "Étudier"} icon: {Image-Resource "Pad"} action-handler: {Action kalima study})
       (<Label-Item>      title: {Locales english: "Edit" french: "Éditer"} icon: {Image-Resource "WorkspaceText"} action-handler: {Action kalima edit}))))
 
 
@@ -390,9 +392,9 @@
       (<Action-Icon> name: undo       tooltip-text: {Locales english: "Undo" french: "Annuler"} resource: {Image-Resource "Undo"} action-handler: {Action view undo})
       (<Action-Icon> name: redo       tooltip-text: {Locales english: "Redo" french: "Refaire"} resource: {Image-Resource "Redo"} action-handler: {Action view redo})
       (<Separator>)
-      (<Action-Icon> name: study      tooltip-text: {Locales english: "Study" french: "Étudier"} resource: {Image-Resource "Pad"} action-handler: {Action kalima study})
-      (<Separator>)
       (<Action-Icon> name: browse     tooltip-text: {Locales english: "Browse" french: "Consulter"} resource: {Image-Resource "Doc"} action-handler: {Action kalima browse})
+      (<Separator>)
+      (<Action-Icon> name: study      tooltip-text: {Locales english: "Study" french: "Étudier"} resource: {Image-Resource "Pad"} action-handler: {Action kalima study})
       (<Separator>)
       (<Action-Icon> name: edit       tooltip-text: {Locales english: "Edit" french: "Éditer"} resource: {Image-Resource "WorkspaceText"} action-handler: {Action kalima edit})
       @wait

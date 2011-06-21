@@ -3,8 +3,10 @@
   (root "src")
   (products (kalima (title "Kalima")
                        (run kalima.run)
-                       (update kalima.application
-                               kalima.run)
+                       (update kalima
+                               kalima.application
+                               kalima.run
+                               kalima.ui)
                        (build (kalima))
                        (dependencies jazz
                                      jazz.debuggee
