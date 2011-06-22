@@ -67,7 +67,9 @@
                 (<Tree-Node-Column>                      title: "Word" display-images?: #f toplevel-controls?: #f width: 419))))
           (<Layout-View>                                 location: second layout-type: border
             (<Layout-View>                               location: center layout-type: center
-              (<Label-View>             name: entry      size: {Dimension 600 50} justification: center font: {Font Kalima}))
+              (<Layout-View>                             layout-type: border size: {Dimension 600 110}
+                (<Label-View>           name: primary    location: north size: {Dimension 600 50} justification: center font: {Font Kalima})
+                (<Label-View>           name: secondary  location: south size: {Dimension 600 50} justification: center font: {Font Kalima})))
             (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
               (<Label-View>             name: note)))))))
   
@@ -149,7 +151,7 @@
   (method (on-language evt)
     (set! language (get-value~ (get-sender~ evt)))
     (setup-words)
-    (display "" {Color Black})
+    (display "" "")
     (display-note ""))
   
   
@@ -170,20 +172,20 @@
   
   
   (method (update)
-    (let ((title (case language
-                   ((primary) (get-secondary~ entry))
-                   ((secondary) (get-primary~ entry))))
+    (let ((primary (get-primary~ entry))
+          (secondary (get-secondary~ entry))
           (note (get-note~ entry)))
-      (display title (case language
-                       ((primary) {Color Dark-Green})
-                       ((secondary) {Color Black})))
+      (display primary secondary)
       (display-note note)))
   
   
-  (method (display text color)
-    (let ((label (locate 'entry)))
-      (set-color~ label color)
-      (set-title~ label text)))
+  (method (display primary secondary)
+    (let ((label (locate 'primary)))
+      (set-color~ label {Color Black})
+      (set-title~ label primary))
+    (let ((label (locate 'secondary)))
+      (set-color~ label {Color Dark-Green})
+      (set-title~ label secondary)))
   
   
   (method (display-note text)
@@ -260,7 +262,9 @@
                 (<Tree-Node-Column>                      title: "Subject" display-images?: #f toplevel-controls?: #f width: 419))))
           (<Layout-View>                                 location: second layout-type: border
             (<Layout-View>                               location: center layout-type: center
-              (<Label-View>             name: entry      size: {Dimension 600 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry}))
+              (<Layout-View>                             layout-type: border size: {Dimension 600 110}
+                (<Label-View>           name: primary    location: north size: {Dimension 600 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})
+                (<Label-View>           name: secondary  location: south size: {Dimension 600 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})))
             (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 4 0}
               (<Layout-View>                             layout-type: border
                 (<Label-View>           name: note       size: {Dimension 100 20} location: west)
@@ -292,8 +296,9 @@
     
     (define (setup-ask)
       (let ((combo (locate 'ask))
-            (random {Locales english: "Random" french: "Aléatoire"}))
-        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (:random ,random)))
+            (random {Locales english: "Random" french: "Aléatoire"})
+            (both {Locales english: "Both" french: "Les deux"}))
+        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (:random ,random) (:both ,both)))
         (set-value~ combo 'primary)))
     
     (set! dictionary (get-current-dictionary))
@@ -450,7 +455,10 @@
     (if (null? entries)
         (set! entry #f)
       (set! stage 'question)
-      (set! language (if (eq? ask :random) (random-element '(primary secondary)) ask))
+      (set! language (case ask
+                       ((:random) (random-element '(primary secondary)))
+                       ((:both) 'secondary)
+                       (else ask)))
       (set! entry (random-element entries)))
     (update))
   
@@ -484,20 +492,17 @@
   (method (update)
     (if (not entry)
         (begin
-          (display "" {Color Black})
+          (display "" "")
           (display-note ""))
       (let ((primary (get-primary~ entry))
             (secondary (get-secondary~ entry))
             (note (get-note~ entry)))
-        (case stage
-          ((question)
-           (case language
-             ((primary) (display primary {Color Black}))
-             ((secondary) (display secondary {Color Dark-Green}))))
-          ((answer)
-           (case language
-             ((primary) (display secondary {Color Dark-Green}))
-             ((secondary) (display primary {Color Black})))))
+        (if (or (eq? ask :both)
+                (eq? stage 'answer))
+            (display primary secondary)
+          (case language
+            ((primary) (display primary ""))
+            ((secondary) (display "" secondary))))
         (display-note note)))
     (statistics))
   
@@ -512,10 +517,13 @@
          ((secondary) 'primary)))))
   
   
-  (method (display text color)
-    (let ((label (locate 'entry)))
-      (set-color~ label color)
-      (set-title~ label text)))
+  (method (display primary secondary)
+    (let ((label (locate 'primary)))
+      (set-color~ label {Color Black})
+      (set-title~ label primary))
+    (let ((label (locate 'secondary)))
+      (set-color~ label {Color Dark-Green})
+      (set-title~ label secondary)))
   
   
   (method (display-note text)
