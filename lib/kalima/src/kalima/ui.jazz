@@ -191,12 +191,17 @@
       (set-title~ label text))))
 
 
+;;;
+;;;; Browse-Actions
+;;;
+
+
 (class Kalima-Browse-Actions extends Actions
 
 
   (form
     (<install>
-      (<Action-Item> name: edit action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut F2}))))
+      (<Action-Item> name: edit action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
 
 
 ;;;
@@ -523,12 +528,19 @@
       (set-title~ label (format "Right: {a}, wrong: {a}, remaining: {a}" right wrong (length entries))))))
 
 
+;;;
+;;;; Study-Actions
+;;;
+
+
 (class Kalima-Study-Actions extends Actions
 
 
   (form
     (<install>
-      (<Action-Item> name: edit action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut F2}))))
+      (<Action-Item> name: review action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
+      (<Action-Item> name: save-theme action-handler: {Event-Handler :focus-guest on-save-theme} shortcut: {Shortcut :alt #\T})
+      (<Action-Item> name: edit action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
 
 
 ;;;
