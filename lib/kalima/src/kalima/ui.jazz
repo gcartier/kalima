@@ -241,8 +241,10 @@
         (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
           (<Border-View>                                 border-color: {Color Entry-Border}
             (<Combo-Box>                name: ask        content-change-handler: {Event-Handler :document on-ask})))
-        (<Separator>                                     size: {Dimension 8 0})
+        (<Separator>                                     size: {Dimension 14 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Review" resource: {Image-Resource "Edit"} portfolio: :images action-handler: {Event-Handler :form on-review})
+        (<Separator>                                     size: {Dimension 8 0})
+        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Theme" resource: {Image-Resource "Grab"} portfolio: :images action-handler: {Event-Handler :form on-save-theme})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Edit" resource: {Image-Resource "Script"} portfolio: :images action-handler: {Event-Handler :form on-edit})
         (<Separator>                                     location: tail size: {Dimension 2 0}))
       (<Border-View>                                     location: center border-type: edge style: entry
@@ -281,7 +283,7 @@
     (define (setup-select)
       (let ((combo (locate 'select)))
         (set-choices~ combo '((none {Locales english: "None" french: "Aucun"}) (all {Locales english: "All" french: "Tous"})))
-        (set-value~ combo 'all)))
+        (set-value~ combo 'none)))
     
     (define (setup-ask)
       (let ((combo (locate 'ask))
@@ -289,32 +291,33 @@
         (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (:random ,random)))
         (set-value~ combo 'primary)))
     
-    (define (setup-subjects)
-      (define (collect-subjects)
-        (let ((queue (new-queue)))
-          (for-each (lambda (theme)
-                      (let ((subject (get-subject~ theme)))
-                        (enqueue queue (cons subject theme))))
-                    (get-themes~ dictionary))
-          (sort di<? (queue-list queue) key: car)))
-      
-      (let ((tree (locate 'subjects)))
-        (remove-every-row~ tree)
-        (with-update-locked~ tree
-          (lambda ()
-            (for-each (lambda (info)
-                        (bind (subject . theme) info
-                          (let ((handler (new Event-Handler execute: (lambda (evt) (subjects-update)))))
-                            (let ((node (new Check-Box title: subject checked?: #t content-change-handler: handler)))
-                              (add-row~ tree children: (list node) user-data: theme)))))
-                      (collect-subjects))))))
-    
     (set! dictionary (get-current-dictionary))
     (set! ask 'primary)
     (setup-select)
     (setup-ask)
     (setup-subjects)
     (subjects-update))
+  
+  
+  (method (setup-subjects)
+    (define (collect-subjects)
+      (let ((queue (new-queue)))
+        (for-each (lambda (theme)
+                    (let ((subject (get-subject~ theme)))
+                      (enqueue queue (cons subject theme))))
+                  (get-themes~ dictionary))
+        (sort di<? (queue-list queue) key: car)))
+    
+    (let ((tree (locate 'subjects)))
+      (remove-every-row~ tree)
+      (with-update-locked~ tree
+        (lambda ()
+          (for-each (lambda (info)
+                      (bind (subject . theme) info
+                        (let ((handler (new Event-Handler execute: (lambda (evt) (subjects-update)))))
+                          (let ((node (new Check-Box title: subject checked?: #f content-change-handler: handler)))
+                            (add-row~ tree children: (list node) user-data: theme)))))
+                    (collect-subjects))))))
   
   
   (method (subjects-update)
@@ -385,6 +388,19 @@
   
   (method (on-review evt)
     (setup-entries review))
+  
+  
+  (method (on-save-theme evt)
+    (let ((subject (request-string title: "Theme" prefix: "Subject:" initial-value: "Review"))
+          (references (map get-primary~ entries)))
+      (let ((theme (new Kalima-Theme dictionary subject references)))
+        (replace-theme~ dictionary theme)
+        (setup-subjects)
+        (let ((tree (locate 'subjects)))
+          (let ((row (user-data-row~ tree theme)))
+            (let ((checkbox (first-child~ row)))
+              (set-checked?~ checkbox #t)
+              (subjects-update)))))))
   
   
   (method (on-edit evt)

@@ -170,8 +170,23 @@
     (table-set! entries (get-primary~ entry) entry))
   
   
+  (method public (find-theme subject)
+    (find themes subject key: get-subject~ test: di=? return: 'item))
+  
+  
   (method public (add-theme theme)
     (set! themes (append themes (list theme))))
+  
+  
+  (method public (remove-theme theme)
+    (set! themes (remove! theme themes)))
+  
+  
+  (method public (replace-theme theme)
+    (let ((actual (find-theme (get-subject~ theme))))
+      (when actual
+        (remove-theme actual))
+      (add-theme theme)))
   
   
   (method public (collect-subjects)
