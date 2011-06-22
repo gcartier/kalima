@@ -339,7 +339,10 @@
             (let ((checkbox (first-child~ row)))
               (when (get-checked?~ checkbox)
                 (let ((theme (get-user-data~ row)))
-                  (enqueue-list entries (get-entries~ theme)))))))
+                  (for-each (lambda (entry)
+                              (unless (memq? entry (queue-list entries))
+                                (enqueue entries entry)))
+                            (get-entries~ theme)))))))
         (queue-list entries)))
     
     (setup-entries (collect-entries)))
@@ -615,11 +618,11 @@
   
   (method (setup)
     (set! dictionary (get-current-dictionary))
+    (setup-entries))
+  
+  
+  (method (setup-entries)
     (set! entries (collect-entries~ dictionary))
-    (setup-words))
-  
-  
-  (method (setup-words)
     (let ((tree (locate 'entries)))
       (remove-every-row~ tree)
       (with-update-locked~ tree
@@ -658,11 +661,25 @@
   
   
   (method (on-add evt)
-    )
+    (let ((tree (locate 'entries))
+          (entry (new Kalima-Entry "" "" "")))
+      (add-entry~ dictionary entry)
+      (setup-entries)
+      (select-user-data-row~ tree entry)))
   
   
   (method (on-remove evt)
-    )
+    (let ((tree (locate 'entries)))
+      (let ((current (get-row~ tree (get-single-selection~ tree)))
+            (count (get-visible-count~ tree)))
+        (let ((entry (get-user-data~ current))
+              (next (and (> count 1) (or (get-next~ current) (get-row~ tree (- count 2))))))
+          (debug 'before (length entries))
+          (remove-entry~ dictionary entry)
+          (setup-entries)
+          (debug 'after (length entries))
+          (when next
+            (select-user-data-row~ tree (get-user-data~ next)))))))
   
   
   (method (on-selection-change evt)

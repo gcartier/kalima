@@ -56,6 +56,7 @@
       (let ((dictionary (read-dictionary)))
         (read-entries dictionary)
         (read-themes dictionary)
+        (set-modified?~ dictionary #f)
         dictionary))))
 
 
@@ -95,10 +96,11 @@
         (let ((subject (get-subject~ theme)))
           (print-header subject)
           (format port "({s}{%}" subject)
-          (loop (for reference in (get-references~ theme) remainder remain)
-                (format port " \"{a}\"" reference)
-                (unless (null? remain)
-                  (format port "{%}")))
+          (loop (for entry in (get-entries~ theme) remainder remain)
+                (let ((reference (get-primary~ entry)))
+                  (format port " \"{a}\"" reference)
+                  (unless (null? remain)
+                    (format port "{%}"))))
           (format port "){%}")
           (unless last?
             (format port "{%}{%}"))))
@@ -167,7 +169,16 @@
   
   
   (method public (add-entry entry)
-    (table-set! entries (get-primary~ entry) entry))
+    (table-set! entries (get-primary~ entry) entry)
+    (set! modified? #t))
+  
+  
+  (method public (remove-entry entry)
+    (for-each (lambda (theme)
+                (remove-entry~ theme entry))
+              themes)
+    (table-clear entries (get-primary~ entry))
+    (set! modified? #t))
   
   
   (method public (find-theme subject)
@@ -175,11 +186,13 @@
   
   
   (method public (add-theme theme)
-    (set! themes (append themes (list theme))))
+    (set! themes (append themes (list theme)))
+    (set! modified? #t))
   
   
   (method public (remove-theme theme)
-    (set! themes (remove! theme themes)))
+    (set! themes (remove! theme themes))
+    (set! modified? #t))
   
   
   (method public (replace-theme theme)
@@ -236,20 +249,23 @@
   
   (slot dictionary getter generate)
   (slot subject    getter generate)
-  (slot references getter generate)
+  (slot entries    getter generate)
   
   
   (method override (initialize dictionary subject references)
+    (define (collect-entries)
+      (map (lambda (reference)
+             (get-entry~ dictionary reference))
+           references))
+    
     (nextmethod)
     (set! dictionary~self dictionary)
     (set! subject~self subject)
-    (set! references~self references))
+    (set! entries~self (collect-entries)))
   
   
-  (method public (get-entries)
-    (map (lambda (reference)
-           (get-entry~ dictionary reference))
-         references)))
+  (method public (remove-entry entry)
+    (set! entries (remove! entry entries))))
 
 
 ;;;
