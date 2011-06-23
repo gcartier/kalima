@@ -15,7 +15,9 @@
         (jazz.jml)
         (jazz.library)
         (jazz.locale)
+        (jazz.system)
         (jazz.ui)
+        (jazz.ui.clipboard)
         (jazz.ui.view)
         (kalima))
 
@@ -41,7 +43,7 @@
     {Point 834 25})
   
   (method meta override (host-size)
-    {Dimension 800 1009})
+    {Dimension 800 697})
   
   
   (slot dictionary initialize #f)
@@ -83,6 +85,16 @@
   (method override (destroy)
     (remove-listener~ dictionary self)
     (nextmethod))
+  
+  
+  (method override (focus-default)
+    (focus-entries))
+  
+  
+  (method (focus-entries)
+    (let ((tree (locate 'entries)))
+      (acquire-focus~ tree)
+      (auto-select-first~ tree)))
   
   
   ;;;
@@ -152,7 +164,8 @@
     (set! language (get-value~ (get-sender~ evt)))
     (setup-words)
     (display "" "")
-    (display-note ""))
+    (display-note "")
+    (focus-entries))
   
   
   (method (on-selection-change evt)
@@ -316,7 +329,7 @@
                     (let ((subject (get-subject~ theme)))
                       (enqueue queue (cons subject theme))))
                   (get-themes~ dictionary))
-        (sort di<? (queue-list queue) key: car)))
+        (queue-list queue)))
     
     (let ((tree (locate 'subjects)))
       (remove-every-row~ tree)
@@ -587,7 +600,7 @@
         (<Separator>                                     size: {Dimension 4 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Remove Entry" resource: {Image-Resource "Remove"} portfolio: :images action-handler: {Event-Handler :form on-remove}))
       (<Border-View>                                     location: center border-type: edge style: entry
-        (<Splitter-View>                                 background: {Color White} orientation: vert division: 205
+        (<Splitter-View>                                 background: {Color White} orientation: vert division: -183
           (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
             (<!>                         name: content   layout-type: fill
               (<Tree-Header>                             style: document
@@ -595,9 +608,10 @@
                   (<Tree-View>           name: entries   filled-column: note portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
                     (<Tree-Node-Column>  name: primary   title: "" display-images?: #f toplevel-controls?: #f width: 175)
                     (<Tree-Label-Column> name: secondary title: "" width: 175)
-                    (<Tree-Label-Column> name: note      title: "Note"))))))
+                    (<Tree-Label-Column> name: note      title: "Note")
+                    (<Tree-Label-Column> name: themes    title: "Themes" width: 200))))))
           (<Layout-View>                                 location: second layout-type: center
-            (<Kalima-Entry-View>         name: entry     size: {Dimension 350 100} location: center))))))
+            (<Kalima-Entry-View>         name: entry     size: {Dimension 570 80} location: center))))))
   
   
   (method override (finish rest)
@@ -618,10 +632,17 @@
   
   (method (setup)
     (set! dictionary (get-current-dictionary))
+    (set-dictionary~ (locate 'entry) dictionary)
     (setup-entries))
   
   
   (method (setup-entries)
+    (define (present-themes entry)
+      (let ((themes (collect-themes~ dictionary entry)))
+        (if (null? themes)
+            ""
+          (join (map get-subject~ themes) ", "))))
+    
     (set! entries (collect-entries~ dictionary))
     (let ((tree (locate 'entries)))
       (remove-every-row~ tree)
@@ -630,8 +651,9 @@
           (for-each (lambda (entry)
                       (let ((primary (get-primary~ entry))
                             (secondary (get-secondary~ entry))
-                            (note (get-note~ entry)))
-                        (add-row~ tree children: (list (new Tree-Node title: primary) (new Tree-Label title: secondary) (new Tree-Label title: note)) user-data: entry)))
+                            (note (get-note~ entry))
+                            (themes (present-themes entry)))
+                        (add-row~ tree children: (list (new Tree-Node title: primary) (new Tree-Label title: secondary) (new Tree-Label title: note) (new Tree-Label title: themes)) user-data: entry)))
                     (sort di<? entries key: get-primary~))))
       (let ((primary (get-primary~ dictionary))
             (secondary (get-secondary~ dictionary)))
@@ -674,10 +696,8 @@
             (count (get-visible-count~ tree)))
         (let ((entry (get-user-data~ current))
               (next (and (> count 1) (or (get-next~ current) (get-row~ tree (- count 2))))))
-          (debug 'before (length entries))
           (remove-entry~ dictionary entry)
           (setup-entries)
-          (debug 'after (length entries))
           (when next
             (select-user-data-row~ tree (get-user-data~ next)))))))
   
@@ -720,32 +740,63 @@
 (class Kalima-Entry-View extends View
   
   
+  (slot dictionary initialize #f accessors generate)
+  (slot entry      initialize #f getter generate)
+  
+  
   (form
     (<install>
-      (<Label-View>                   name: primary-label            position: {Point 0 2} size: {Dimension 40 16} font: {Font Label})
-      (<Border-View>                                                 position: {Point 46 0} size: {Dimension 300 19} border-type: edge style: entry
-        (<Scroller-View>                                             hscroll?: #f vscroll?: #f
-          (<!>                        name: content                  layout-type: fill
+      (<Label-View>                   name: primary-label             position: {Point 0 2} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 46 0} size: {Dimension 300 19} border-type: edge style: entry
+        (<Scroller-View>                                              hscroll?: #f vscroll?: #f
+          (<!>                        name: content                   layout-type: fill
             (<Kalima-Entry-Text-View> name: primary))))
-      (<Label-View>                   name: secondary-label          position: {Point 0 32} size: {Dimension 40 16} font: {Font Label})
-      (<Border-View>                                                 position: {Point 46 30} size: {Dimension 300 19} border-type: edge style: entry
-        (<Scroller-View>                                             hscroll?: #f vscroll?: #f
-          (<!>                        name: content                  layout-type: fill
+      (<Label-View>                   name: secondary-label           position: {Point 0 32} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 46 30} size: {Dimension 300 19} border-type: edge style: entry
+        (<Scroller-View>                                              hscroll?: #f vscroll?: #f
+          (<!>                        name: content                   layout-type: fill
             (<Kalima-Entry-Text-View> name: secondary))))
-      (<Label-View>                                   title: "Note:" position: {Point 0 63} size: {Dimension 40 16} font: {Font Label})
-      (<Border-View>                                                 position: {Point 46 60} size: {Dimension 300 19} border-type: edge style: entry
-        (<Scroller-View>                                             hscroll?: #f vscroll?: #f
-          (<!>                        name: content                  layout-type: fill
-            (<Kalima-Entry-Text-View> name: note))))))
+      (<Label-View>                                   title: "Note:"  position: {Point 0 63} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 46 60} size: {Dimension 300 19} border-type: edge style: entry
+        (<Scroller-View>                                              hscroll?: #f vscroll?: #f
+          (<!>                        name: content                   layout-type: fill
+            (<Kalima-Entry-Text-View> name: note))))
+      (<Label-View>                                   title: "Theme:" position: {Point 380 2} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 426 0} size: {Dimension 140 20} border-color: {Color Entry-Border}
+        (<Combo-Box>                  name: theme1                    content-change-handler: {Event-Handler :form on-theme}))
+      (<Label-View>                                   title: "Theme:" position: {Point 380 32} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 426 30} size: {Dimension 140 20} border-color: {Color Entry-Border}
+        (<Combo-Box>                  name: theme2                    content-change-handler: {Event-Handler :form on-theme}))
+      (<Label-View>                                   title: "Theme:" position: {Point 380 62} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 426 60} size: {Dimension 140 20} border-color: {Color Entry-Border}
+        (<Combo-Box>                  name: theme3                    content-change-handler: {Event-Handler :form on-theme}))))
   
   
   (method (set-entry entry)
+    (define (setup-themes name theme)
+      (let ((combo (locate name)))
+        (set-choices~ combo (cons (list #f "<None>") (map (lambda (theme) (list theme (get-subject~ theme))) (get-themes~ dictionary))))
+        (set-value~ combo theme)))
+    
+    (set! entry~self entry)
     (let ((primary (get-primary~ entry))
           (secondary (get-secondary~ entry))
-          (note (get-note~ entry)))
+          (note (get-note~ entry))
+          (themes (collect-themes~ dictionary entry)))
       (set-string-content~ (locate 'primary) primary)
       (set-string-content~ (locate 'secondary) secondary)
-      (set-string-content~ (locate 'note) note))))
+      (set-string-content~ (locate 'note) note)
+      (let ((count (length themes)))
+        (setup-themes 'theme1 (and (>= count 1) (first themes)))
+        (setup-themes 'theme2 (and (>= count 2) (second themes)))
+        (setup-themes 'theme3 (and (>= count 3) (third themes))))))
+  
+  
+  (method (on-theme evt)
+    (define (collect-themes)
+      (remove-duplicates (collect get-value~ (list (locate 'theme1) (locate 'theme2) (locate 'theme3)))))
+    
+    (update-themes~ dictionary entry (collect-themes))))
 
 
 ;;;
@@ -757,7 +808,7 @@
   
   
   (form
-    (<install> accepts-returns?: #f show-unfocused-selection?: #f))
+    (<install> accepts-returns?: #f show-unfocused-selection?: #f return-press-handler: {Event-Handler :form on-return-press}))
   
   
   (method override (new-model)
@@ -767,12 +818,92 @@
   (method override (content-change origin)
     (nextmethod origin)
     (let ((editor (find-ascendant Kalima-Edit-View)))
-      (text-change~ editor name (get-string-content)))))
+      (text-change~ editor name (get-string-content))))
+  
+  
+  (method override (on-return-press evt)
+    (close~ (get-host))))
 
 
 ;;;
-;;;; Text
+;;;; Keyboard
 ;;;
 
 
-(class Kalima-Text-View extends Jazz-Plain-Text-View))
+(class Kalima-Keyboard extends Layout-View
+  
+  
+  (method meta override (host-icon)
+    {Image-Resource "Build"})
+  
+  (method meta override (host-title)
+    {Locales english: "Keyboard" french: "Clavier"})
+  
+  (method meta override (host-position)
+    {Point 834 728})
+  
+  (method meta override (host-size)
+    {Dimension 800 306})
+  
+  
+  (form
+    (<install>                                              size: {Dimension 420 639} layout-type: border
+      (<Layout-View>                   name: toolbar        size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
+        (<Push-Tool>                                        enabled?: #f size: {Dimension 22 22} tooltip?: #t tooltip-text: "Add Shortcut" resource: {Image-Resource "Add"} portfolio: :images action-handler: {Event-Handler :form on-add})
+        (<Separator>                                        size: {Dimension 4 0})
+        (<Push-Tool>                                        enabled?: #f size: {Dimension 22 22} tooltip?: #t tooltip-text: "Remove Shortcut" resource: {Image-Resource "Remove"} portfolio: :images action-handler: {Event-Handler :form on-remove}))
+      (<Border-View>                   name: actions-border location: center border-type: edge style: entry
+        (<Scroller-View>                                    style: document hscroll?: #t vscroll?: #t
+          (<content!>                                       layout-type: fill
+            (<Tree-Header>                                  style: document
+              (<content!>
+                (<Tree-View>           name: actions        portfolio: :images filled-column: text double-click-handler: {Event-Handler :form on-double-click}
+                  (<Tree-Node-Column>  name: text           title: "Text" width: 235 display-images?: #f toplevel-controls?: #f)
+                  (<Tree-Label-Column> name: shortcut       title: "Shortcut" width: 115)))))))))
+  
+  
+  (method override (finish rest)
+    (nextmethod rest)
+    (setup))
+  
+  
+  (method override (focus-default)
+    (let ((tree (locate 'actions)))
+      (acquire-focus~ tree)))
+  
+  
+  (method (setup)
+    (define (collect-actions)
+      (collect-if (lambda (action)
+                    (let ((handler (get-action-handler~ action)))
+                      (and (is? handler Event-Handler)
+                           (eq? (get-method-name~ handler) 'on-insert))))
+                  (get-children~ (find-actions 'kalima))))
+    
+    (let ((actions (collect-actions))
+          (tree (locate 'actions)))
+      (remove-every-row~ tree)
+      (with-update-locked~ tree
+        (lambda ()
+          (for-each (lambda (action)
+                      (let ((text (get-property~ (get-action-handler~ action) text:))
+                            (shortcut (present-shortcut~ (get-shortcut~ action))))
+                        (add-row~ tree children: (list (new Tree-Node title: text) (new Tree-Label title: shortcut)) user-data: action)))
+                    actions)))))
+  
+  
+  (method (on-add evt)
+    )
+  
+  
+  (method (on-remove evt)
+    )
+  
+  
+  (method (on-double-click evt)
+    (let ((tree (get-sender~ evt)))
+      (let ((action (get-single-selected-data~ tree)))
+        (when action
+          (let ((text (get-property~ (get-action-handler~ action) text:)))
+            (set-clipboard-text text)
+            (user-message "Clipboard set to {a}" text))))))))

@@ -202,6 +202,12 @@
       (add-theme theme)))
   
   
+  (method public (collect-themes entry)
+    (collect-if (lambda (theme)
+                  (has-entry?~ theme entry))
+                themes))
+  
+  
   (method public (collect-subjects)
     (map get-subject~ themes))
   
@@ -215,6 +221,18 @@
       ((primary) (set-primary~ entry content))
       ((secondary) (set-secondary~ entry content))
       ((note) (set-note~ entry content)))
+    (set! modified? #t)
+    (process-entry-change entry))
+  
+  
+  (method public (update-themes entry entry-themes)
+    (for-each (lambda (theme)
+                (if (memq? theme entry-themes)
+                    (unless (has-entry?~ theme entry)
+                      (add-entry~ theme entry))
+                  (when (has-entry?~ theme entry)
+                    (remove-entry~ theme entry))))
+              themes)
     (set! modified? #t)
     (process-entry-change entry))
   
@@ -262,6 +280,20 @@
     (set! dictionary~self dictionary)
     (set! subject~self subject)
     (set! entries~self (collect-entries)))
+  
+  
+  (method override (print output readably)
+    (print-unreadable self output
+      (lambda (output)
+        (format output "{s}" subject))))
+  
+  
+  (method public (has-entry? entry)
+    (memq? entry entries))
+  
+  
+  (method public (add-entry entry)
+    (set! entries (cons entry entries)))
   
   
   (method public (remove-entry entry)
