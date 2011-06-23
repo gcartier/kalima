@@ -22,7 +22,37 @@
         (kalima))
 
 
+(define font-sizes
+  '(18 24 36 48 72))
+
+
 (define-font Kalima font-name: "Times New Roman" point-size: 36)
+
+
+;;;
+;;;; View
+;;;
+
+
+(class Kalima-View extends Layout-View
+  
+  
+  (method (change-size changer)
+    (let ((center (locate 'center))
+          (entry (locate 'entry))
+          (primary (locate 'primary))
+          (secondary (locate 'secondary)))
+      (let ((point-size (changer font-sizes (get-point-size~ (get-font~ primary)) cycle?: #f)))
+        (let ((font (new Font font-name: "Times New Roman" point-size: point-size)))
+          (let ((height (font-height~ font)))
+            (let ((spacer (fxround (/ height 5))))
+              (set-height~ entry (+ height spacer height))
+              (set-height~ primary height)
+              (set-font~ primary font)
+              (set-height~ secondary height)
+              (set-font~ secondary font)))))
+      (layout-view~ entry)
+      (layout-view~ center))))
 
 
 ;;;
@@ -30,7 +60,7 @@
 ;;;
 
 
-(class Kalima-Browse-View extends Layout-View implements Dictionary-Listener
+(class Kalima-Browse-View extends Kalima-View implements Dictionary-Listener
   
   
   (method meta override (host-icon)
@@ -59,6 +89,10 @@
         (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
           (<Border-View>                                 border-color: {Color Entry-Border}
             (<Combo-Box>                name: language   content-change-handler: {Event-Handler :document on-language})))
+        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Decrease Text" resource: {Image-Resource "FindNext"} portfolio: :images action-handler: {Event-Handler :form on-decrease})
+        (<Separator>                                     location: tail size: {Dimension 2 0})
+        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Increase Text" resource: {Image-Resource "FindPrevious"} portfolio: :images action-handler: {Event-Handler :form on-increase})
+        (<Separator>                                     location: tail size: {Dimension 16 0})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Edit" resource: {Image-Resource "Script"} portfolio: :images action-handler: {Event-Handler :form on-edit})
         (<Separator>                                     location: tail size: {Dimension 2 0}))
       (<Border-View>                                     location: center border-type: edge style: entry
@@ -68,8 +102,8 @@
               (<Tree-View>              name: entries    portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
                 (<Tree-Node-Column>                      title: "Word" display-images?: #f toplevel-controls?: #f width: 419))))
           (<Layout-View>                                 location: second layout-type: border
-            (<Layout-View>                               location: center layout-type: center
-              (<Layout-View>                             layout-type: border size: {Dimension 600 110}
+            (<Layout-View>              name: center     location: center layout-type: center
+              (<Layout-View>            name: entry      layout-type: border size: {Dimension 600 110}
                 (<Label-View>           name: primary    location: north size: {Dimension 600 50} justification: center font: {Font Kalima})
                 (<Label-View>           name: secondary  location: south size: {Dimension 600 50} justification: center font: {Font Kalima})))
             (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
@@ -154,6 +188,14 @@
   ;;;
   
   
+  (method (on-decrease evt)
+    (change-size previous-element))
+  
+  
+  (method (on-increase evt)
+    (change-size next-element))
+  
+  
   (method (on-edit evt)
     (if (not entry)
         (bell)
@@ -216,7 +258,9 @@
 
   (form
     (<install>
-      (<Action-Item> name: edit action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
+      (<Action-Item> name: increase action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
+      (<Action-Item> name: decrease action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
+      (<Action-Item> name: edit     action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
 
 
 ;;;
@@ -224,7 +268,7 @@
 ;;;
 
 
-(class Kalima-Study-View extends Layout-View implements Dictionary-Listener
+(class Kalima-Study-View extends Kalima-View implements Dictionary-Listener
   
   
   (method meta override (host-icon)
@@ -265,6 +309,10 @@
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Review" resource: {Image-Resource "Edit"} portfolio: :images action-handler: {Event-Handler :form on-review})
         (<Separator>                                     size: {Dimension 8 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Theme" resource: {Image-Resource "Grab"} portfolio: :images action-handler: {Event-Handler :form on-save-theme})
+        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Decrease Text" resource: {Image-Resource "FindNext"} portfolio: :images action-handler: {Event-Handler :form on-decrease})
+        (<Separator>                                     location: tail size: {Dimension 2 0})
+        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Increase Text" resource: {Image-Resource "FindPrevious"} portfolio: :images action-handler: {Event-Handler :form on-increase})
+        (<Separator>                                     location: tail size: {Dimension 16 0})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Edit" resource: {Image-Resource "Script"} portfolio: :images action-handler: {Event-Handler :form on-edit})
         (<Separator>                                     location: tail size: {Dimension 2 0}))
       (<Border-View>                                     location: center border-type: edge style: entry
@@ -274,10 +322,10 @@
               (<Tree-View>              name: subjects   multiple-selection?: #t portfolio: :images
                 (<Tree-Node-Column>                      title: "Subject" display-images?: #f toplevel-controls?: #f width: 419))))
           (<Layout-View>                                 location: second layout-type: border
-            (<Layout-View>                               location: center layout-type: center
-              (<Layout-View>                             layout-type: border size: {Dimension 600 110}
-                (<Label-View>           name: primary    location: north size: {Dimension 600 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})
-                (<Label-View>           name: secondary  location: south size: {Dimension 600 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})))
+            (<Layout-View>              name: center     location: center layout-type: center
+              (<Layout-View>            name: entry      layout-type: border size: {Dimension 4000 110}
+                (<Label-View>           name: primary    location: north size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})
+                (<Label-View>           name: secondary  location: south size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})))
             (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 4 0}
               (<Layout-View>                             layout-type: border
                 (<Label-View>           name: note       size: {Dimension 100 20} location: west)
@@ -429,6 +477,14 @@
               (subjects-update)))))))
   
   
+  (method (on-decrease evt)
+    (change-size previous-element))
+  
+  
+  (method (on-increase evt)
+    (change-size next-element))
+  
+  
   (method (on-edit evt)
     (if (not entry)
         (bell)
@@ -562,9 +618,11 @@
 
   (form
     (<install>
-      (<Action-Item> name: review action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
+      (<Action-Item> name: review     action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
       (<Action-Item> name: save-theme action-handler: {Event-Handler :focus-guest on-save-theme} shortcut: {Shortcut :alt #\T})
-      (<Action-Item> name: edit action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
+      (<Action-Item> name: increase   action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
+      (<Action-Item> name: decrease   action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
+      (<Action-Item> name: edit       action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
 
 
 ;;;
