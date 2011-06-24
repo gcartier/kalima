@@ -308,7 +308,8 @@
         (<Separator>                                     size: {Dimension 14 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Review" resource: {Image-Resource "Edit"} portfolio: :images action-handler: {Event-Handler :form on-review})
         (<Separator>                                     size: {Dimension 8 0})
-        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Theme" resource: {Image-Resource "Grab"} portfolio: :images action-handler: {Event-Handler :form on-save-theme})
+        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Theme" resource: {Image-Resource "ImportConfiguration"} portfolio: :images action-handler: {Event-Handler :form on-save-theme})
+        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Augment Theme" resource: {Image-Resource "ImportNew"} portfolio: :images action-handler: {Event-Handler :form on-augment-theme})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Decrease Text" resource: {Image-Resource "FindNext"} portfolio: :images action-handler: {Event-Handler :form on-decrease})
         (<Separator>                                     location: tail size: {Dimension 2 0})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Increase Text" resource: {Image-Resource "FindPrevious"} portfolio: :images action-handler: {Event-Handler :form on-increase})
@@ -465,16 +466,27 @@
   
   
   (method (on-save-theme evt)
-    (let ((subject (request-string title: "Theme" prefix: "Subject:" initial-value: "Review"))
+    (save-theme #f))
+  
+  
+  (method (on-augment-theme evt)
+    (save-theme #t))
+  
+  
+  (method (save-theme augment?)
+    (let ((subject (request-string title: (if augment? "Augment Theme" "Save Theme") prefix: "Subject:" initial-value: "Review"))
           (references (map get-primary~ entries)))
-      (let ((theme (new Kalima-Theme dictionary subject references)))
-        (replace-theme~ dictionary theme)
-        (setup-subjects)
-        (let ((tree (locate 'subjects)))
-          (let ((row (user-data-row~ tree theme)))
-            (let ((checkbox (first-child~ row)))
-              (set-checked?~ checkbox #t)
-              (subjects-update)))))))
+      (let ((actual (find-theme~ dictionary subject)))
+        (let ((theme (new Kalima-Theme dictionary subject (if (and actual augment?)
+                                                              (remove-duplicates (append (map get-primary~ (get-entries~ actual)) references) test: equal?)
+                                                            references))))
+          (replace-theme~ dictionary theme)
+          (setup-subjects)
+          (let ((tree (locate 'subjects)))
+            (let ((row (user-data-row~ tree theme)))
+              (let ((checkbox (first-child~ row)))
+                (set-checked?~ checkbox #t)
+                (subjects-update))))))))
   
   
   (method (on-decrease evt)
@@ -622,7 +634,8 @@
   (form
     (<install>
       (<Action-Item> name: review     action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
-      (<Action-Item> name: save-theme action-handler: {Event-Handler :focus-guest on-save-theme} shortcut: {Shortcut :alt #\T})
+      (<Action-Item> name: save-theme action-handler: {Event-Handler :focus-guest on-save-theme} shortcut: {Shortcut :alt #\S})
+      (<Action-Item> name: save-theme action-handler: {Event-Handler :focus-guest on-augment-theme} shortcut: {Shortcut :alt #\T})
       (<Action-Item> name: increase   action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
       (<Action-Item> name: decrease   action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
       (<Action-Item> name: edit       action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
