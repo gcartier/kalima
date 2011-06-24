@@ -502,11 +502,13 @@
   
   
   (method override (return-press key)
-    (case stage
-      ((question)
-       (show-answer))
-      ((answer)
-       (right-answer))))
+    (if (eq? ask :both)
+        (right-answer)
+      (case stage
+        ((question)
+         (show-answer))
+        ((answer)
+         (right-answer)))))
   
   
   (method override (tab-press key modifiers)
@@ -551,6 +553,7 @@
   (method (wrong-answer)
     (when entry
       (increase! wrong)
+      (set! entries (remove entry entries))
       (unless (memq? entry review)
         (set! review (cons entry review)))
       (ask-word)))

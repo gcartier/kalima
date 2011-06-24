@@ -141,7 +141,7 @@
   (method (on-insert evt)
     (let ((focus (get-focus)))
       (when focus
-        (insert-char~ focus (get-property~ evt char:)))))
+        (insert-string~ focus (get-property~ evt text:)))))
 
   
   ;;;
