@@ -650,8 +650,7 @@
   
   
   (slot dictionary initialize #f)
-  (slot entries    initialize #f)
-  (slot entry      initialize #f)
+  (slot selected   initialize #f)
   
   
   (form
@@ -666,7 +665,7 @@
             (<!>                         name: content   layout-type: fill
               (<Tree-Header>                             style: document
                 (<!>                     name: content
-                  (<Tree-View>           name: entries   filled-column: note portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
+                  (<Tree-View>           name: entries   filled-column: note portfolio: :images multiple-selection?: #t selection-handler: {Event-Handler :form on-selection-change}
                     (<Tree-Node-Column>  name: primary   title: "" display-images?: #f toplevel-controls?: #f width: 175)
                     (<Tree-Label-Column> name: secondary title: "" width: 175)
                     (<Tree-Label-Column> name: note      title: "Note")
@@ -704,8 +703,8 @@
             ""
           (join (map get-subject~ themes) ", "))))
     
-    (set! entries (collect-entries~ dictionary))
-    (let ((tree (locate 'entries)))
+    (let ((entries (collect-entries~ dictionary))
+          (tree (locate 'entries)))
       (remove-every-row~ tree)
       (with-update-locked~ tree
         (lambda ()
@@ -753,26 +752,28 @@
   
   (method (on-remove evt)
     (let ((tree (locate 'entries)))
-      (let ((current (get-row~ tree (get-single-selection~ tree)))
-            (count (get-visible-count~ tree)))
-        (let ((entry (get-user-data~ current))
-              (next (and (> count 1) (or (get-next~ current) (get-row~ tree (- count 2))))))
-          (remove-entry~ dictionary entry)
-          (setup-entries)
-          (when next
-            (select-user-data-row~ tree (get-user-data~ next)))))))
+      (let ((rows (get-selected-rows~ tree)))
+        (for-each (lambda (row)
+                    (let ((entry (get-user-data~ row))
+                          (count (get-visible-count~ tree)))
+                      (let ((next (and (> count 1) (or (get-next~ row) (get-row~ tree (- count 2))))))
+                        (remove-entry~ dictionary entry)
+                        (setup-entries)
+                        (when next
+                          (select-user-data-row~ tree (get-user-data~ next))))))
+                  rows))))
   
   
   (method (on-selection-change evt)
     (let ((tree (get-sender~ evt)))
-      (let ((entry (get-single-selected-data~ tree)))
-        (select-entry entry))))
+      (let ((entries (get-selected-data~ tree)))
+        (select-entries entries))))
   
   
-  (method (select-entry entry (field #f))
+  (method (select-entries entries (field #f))
     (let ((entry-view (locate 'entry)))
-      (set-entry~ entry-view entry)
-      (set! entry~self entry)
+      (set-entries~ entry-view entries)
+      (set! selected entries)
       (when field
         (let ((text-view (locate~ entry-view field)))
           (select-all~ text-view)
@@ -780,7 +781,9 @@
   
   
   (method (text-change field content)
-    (update-entry~ dictionary entry field content)))
+    (for-each (lambda (entry)
+                (update-entry~ dictionary entry field content))
+              selected)))
 
 
 (definition (edit-entry entry field)
@@ -790,7 +793,7 @@
                         (focus-host~ frame)
                         (get-guest~ frame))
                     (get-guest~ (new-frame Kalima-Edit-View)))))
-      (select-entry~ editor entry field))))
+      (select-entries~ editor (list entry) field))))
 
 
 ;;;
@@ -802,7 +805,7 @@
   
   
   (slot dictionary initialize #f accessors generate)
-  (slot entry      initialize #f getter generate)
+  (slot entries    initialize #f getter generate)
   
   
   (form
@@ -833,31 +836,46 @@
         (<Combo-Box>                  name: theme3                    content-change-handler: {Event-Handler :form on-theme}))))
   
   
-  (method (set-entry entry)
-    (define (setup-themes name theme)
+  (method (set-entries entries)
+    (define (unique objects)
+      (let ((uniques (remove-duplicates objects test: equal?)))
+        (and (= 1 (length uniques))
+             (car uniques))))
+    
+    (define (unique-theme themes-list index)
+      (unique (map (lambda (themes)
+                     (and (>= (length themes) index) (element themes (- index 1))))
+                   themes-list)))
+    
+    (define (setup-theme name theme)
       (let ((combo (locate name)))
         (set-choices~ combo (cons (list #f "<None>") (map (lambda (theme) (list theme (get-subject~ theme))) (get-themes~ dictionary))))
         (set-value~ combo theme)))
     
-    (set! entry~self entry)
-    (let ((primary (get-primary~ entry))
-          (secondary (get-secondary~ entry))
-          (note (get-note~ entry))
-          (themes (collect-themes~ dictionary entry)))
-      (set-string-content~ (locate 'primary) primary)
-      (set-string-content~ (locate 'secondary) secondary)
-      (set-string-content~ (locate 'note) note)
-      (let ((count (length themes)))
-        (setup-themes 'theme1 (and (>= count 1) (first themes)))
-        (setup-themes 'theme2 (and (>= count 2) (second themes)))
-        (setup-themes 'theme3 (and (>= count 3) (third themes))))))
+    (set! entries~self entries)
+    (let ((entry (and (= 1 (length entries)) (car entries))))
+      (let ((primary (unique (map get-primary~ entries)))
+            (secondary (unique (map get-secondary~ entries)))
+            (note (unique (map get-note~ entries)))
+            (themes-list (map (lambda (entry)
+                                (collect-themes~ dictionary entry))
+                              entries)))
+        (set-string-content~ (locate 'primary) (or primary ""))
+        (set-string-content~ (locate 'secondary) (or secondary ""))
+        (set-string-content~ (locate 'note) (or note ""))
+        (setup-theme 'theme1 (unique-theme themes-list 1))
+        (setup-theme 'theme2 (unique-theme themes-list 2))
+        (setup-theme 'theme3 (unique-theme themes-list 3)))))
   
   
   (method (on-theme evt)
     (define (collect-themes)
       (remove-duplicates (collect get-value~ (list (locate 'theme1) (locate 'theme2) (locate 'theme3)))))
     
-    (update-themes~ dictionary entry (collect-themes))))
+    (let ((themes (collect-themes)))
+      (for-each (lambda (entry)
+                  (update-themes~ dictionary entry themes))
+                entries))))
 
 
 ;;;
