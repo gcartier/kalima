@@ -26,6 +26,13 @@
 
 
 ;; TODO
+;; - button to redo the study (including the review)
+;; - save font size in preferences
+;; - backward / forward in study
+;; - until an interface to reorder them, present themes sorted
+;; - add, remove, reorder, group, ... themes
+;; - browse by theme (theme combo-box)
+;; - while studying change primary of an entry, save review -> error
 
 
 ;;;
@@ -340,7 +347,7 @@
       (<Action-Item> name: study    action-handler: {Event-Handler :application on-study} shortcut: {Shortcut :control :shift #\S})
       (<Action-Item> name: edit     action-handler: {Event-Handler :application on-edit} shortcut: {Shortcut :control :shift #\E})
       (<Action-Item> name: keyboard action-handler: {Event-Handler :application on-keyboard} shortcut: {Shortcut :control :shift #\K})
-      (<Action-Item> name: test     action-handler: {Event-Handler :application on-test} shortcut: {Shortcut :shift #\T})
+      (<Action-Item> name: test     action-handler: {Event-Handler :application on-test} shortcut: {Shortcut :control #\T})
       (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "à"} shortcut: {Shortcut :control #\1})
       (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ì"} shortcut: {Shortcut :control #\2})
       (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ù"} shortcut: {Shortcut :control #\3})

@@ -313,6 +313,12 @@
   (slot note      accessors generate)
   
   
+  (method override (print output readably)
+    (print-unreadable self output
+      (lambda (output)
+        (format output "{s} {s} {s}" primary secondary note))))
+  
+  
   (method override (initialize primary secondary note)
     (nextmethod)
     (set! primary~self primary)

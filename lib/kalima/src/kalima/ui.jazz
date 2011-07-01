@@ -308,8 +308,8 @@
         (<Separator>                                     size: {Dimension 14 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Review" resource: {Image-Resource "Edit"} portfolio: :images action-handler: {Event-Handler :form on-review})
         (<Separator>                                     size: {Dimension 8 0})
-        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Theme" resource: {Image-Resource "ImportConfiguration"} portfolio: :images action-handler: {Event-Handler :form on-save-theme})
-        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Augment Theme" resource: {Image-Resource "ImportNew"} portfolio: :images action-handler: {Event-Handler :form on-augment-theme})
+        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "New Theme..." resource: {Image-Resource "ImportConfiguration"} portfolio: :images action-handler: {Event-Handler :form on-new-theme})
+        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Augment Theme..." resource: {Image-Resource "ImportNew"} portfolio: :images action-handler: {Event-Handler :form on-augment-theme})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Decrease Text" resource: {Image-Resource "FindNext"} portfolio: :images action-handler: {Event-Handler :form on-decrease})
         (<Separator>                                     location: tail size: {Dimension 2 0})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Increase Text" resource: {Image-Resource "FindPrevious"} portfolio: :images action-handler: {Event-Handler :form on-increase})
@@ -465,7 +465,7 @@
     (setup-entries review))
   
   
-  (method (on-save-theme evt)
+  (method (on-new-theme evt)
     (save-theme #f))
   
   
@@ -474,7 +474,7 @@
   
   
   (method (save-theme augment?)
-    (let ((subject (request-string title: (if augment? "Augment Theme" "Save Theme") prefix: "Subject:" initial-value: "Review"))
+    (let ((subject (request-string title: (if augment? "Augment Theme" "New Theme") prefix: "Subject:" initial-value: "Review"))
           (references (map get-primary~ entries)))
       (let ((actual (find-theme~ dictionary subject)))
         (let ((theme (new Kalima-Theme dictionary subject (if (and actual augment?)
@@ -633,12 +633,12 @@
 
   (form
     (<install>
-      (<Action-Item> name: review     action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
-      (<Action-Item> name: save-theme action-handler: {Event-Handler :focus-guest on-save-theme} shortcut: {Shortcut :alt #\S})
-      (<Action-Item> name: save-theme action-handler: {Event-Handler :focus-guest on-augment-theme} shortcut: {Shortcut :alt #\T})
-      (<Action-Item> name: increase   action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
-      (<Action-Item> name: decrease   action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
-      (<Action-Item> name: edit       action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
+      (<Action-Item> name: review        action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
+      (<Action-Item> name: new-theme     action-handler: {Event-Handler :focus-guest on-new-theme} shortcut: {Shortcut :alt #\S})
+      (<Action-Item> name: augment-theme action-handler: {Event-Handler :focus-guest on-augment-theme} shortcut: {Shortcut :alt #\T})
+      (<Action-Item> name: increase      action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
+      (<Action-Item> name: decrease      action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
+      (<Action-Item> name: edit          action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
 
 
 ;;;
