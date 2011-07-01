@@ -31,8 +31,8 @@
 ;; - backward / forward in study
 ;; - until an interface to reorder them, present themes sorted
 ;; - add, remove, reorder, group, ... themes
-;; - browse by theme (theme combo-box)
 ;; - while studying change primary of an entry, save review -> error
+;; - validate duplicate dictionary entries
 
 
 ;;;
@@ -75,7 +75,8 @@
     (let ((file {File Home ".kalima" ".settings"}))
       (when (not (exists?~ file))
         (create~ file))
-      (set! settings (new Settings file: file))))
+      (set! settings (new Settings file: file))
+      (register-settings settings)))
   
   
   (method override (default-preferences)
@@ -96,7 +97,7 @@
       (register-locale (new Locale french: '(english: "French" french: "Français"))))
     
     (define (reopen-dictionary)
-      (let ((file (get-setting~ settings 'dictionary #f)))
+      (let ((file (get-setting~ settings 'kalima.dictionary #f)))
         (when file
           (if (exists?~ file)
               (open-dictionary-file file)
@@ -142,7 +143,7 @@
   
   
   (method (on-test evt)
-    )
+    (explore-views~ (current-view-debugger)))
   
   
   (method (on-insert evt)
@@ -204,7 +205,7 @@
   
   (method (open-dictionary-file file)
     (set-current-dictionary (load-dictionary file))
-    (set-setting~ settings 'dictionary file)
+    (set-setting~ settings 'kalima.dictionary file)
     (save-content~ settings)
     (set-caption-base~ (get-toplevel) (format "Kalima {a}" (capitalize (get-base~ file)))))
   
@@ -343,9 +344,9 @@
       (<Action-Item> name: new      action-handler: {Event-Handler :application on-new-dictionary} shortcut: {Shortcut :control :alt #\N})
       (<Action-Item> name: open     action-handler: {Event-Handler :application on-open-dictionary} shortcut: {Shortcut :control :alt #\O})
       (<Action-Item> name: close    action-handler: {Event-Handler :application on-close-dictionary})
-      (<Action-Item> name: browse   action-handler: {Event-Handler :application on-browse} shortcut: {Shortcut :control :shift #\B})
-      (<Action-Item> name: study    action-handler: {Event-Handler :application on-study} shortcut: {Shortcut :control :shift #\S})
-      (<Action-Item> name: edit     action-handler: {Event-Handler :application on-edit} shortcut: {Shortcut :control :shift #\E})
+      (<Action-Item> name: browse   action-handler: {Event-Handler :application on-browse} shortcut: {Shortcut :control :alt #\B})
+      (<Action-Item> name: study    action-handler: {Event-Handler :application on-study} shortcut: {Shortcut :control :alt #\S})
+      (<Action-Item> name: edit     action-handler: {Event-Handler :application on-edit} shortcut: {Shortcut :control :alt #\E})
       (<Action-Item> name: keyboard action-handler: {Event-Handler :application on-keyboard} shortcut: {Shortcut :control :shift #\K})
       (<Action-Item> name: test     action-handler: {Event-Handler :application on-test} shortcut: {Shortcut :control #\T})
       (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "à"} shortcut: {Shortcut :control #\1})
@@ -484,10 +485,8 @@
       (<Action-Icon> name: edit       tooltip-text: {Locales english: "Edit" french: "Éditer"} resource: {Image-Resource "WorkspaceText"} action-handler: {Action kalima edit})
       (<Separator>)
       (<Action-Icon> name: keyboard   tooltip-text: {Locales english: "Keyboard" french: "Clavier"} resource: {Image-Resource "Build"} action-handler: {Action kalima keyboard})
-      @wait
-      (<Separator>)
-      @wait
-      (<Action-Icon> name: test       tooltip-text: "Test" resource: {Image-Resource "Execute"} action-handler: {Action kalima test}))))
+      (<Action-Icon> name: test       location: tail tooltip-text: "Test" resource: {Image-Resource "Execute"} action-handler: {Action kalima test})
+      (<Separator>                    location: tail size: {Dimension 1 0}))))
 
 
 ;;;

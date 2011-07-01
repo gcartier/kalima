@@ -26,7 +26,9 @@
   '(18 24 36 48 72))
 
 
-(define-font Kalima font-name: "Times New Roman" point-size: 36)
+(define-font Kalima
+  font-name: "Times New Roman"
+  point-size: 36)
 
 
 ;;;
@@ -80,12 +82,17 @@
   (slot themes     initialize #f)
   (slot entries    initialize #f)
   (slot entry      initialize #f)
+  (slot theme      initialize #f)
   (slot language   initialize #f)
   
   
   (form
     (<install>                                           layout-type: border
       (<Layout-View>                    name: toolbar    size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
+        (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
+          (<Border-View>                                 border-color: {Color Entry-Border}
+            (<Combo-Box>                name: theme      content-change-handler: {Event-Handler :document on-theme})))
+        (<Separator-View>                                size: {Dimension 4 0})
         (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
           (<Border-View>                                 border-color: {Color Entry-Border}
             (<Combo-Box>                name: language   content-change-handler: {Event-Handler :document on-language})))
@@ -137,16 +144,28 @@
   
   
   (method (setup)
+    (define (setup-theme)
+      (let ((combo (locate 'theme)))
+        (set-choices~ combo `((#f "All") ,@(map (lambda (theme) (list theme (get-subject~ theme))) (get-themes~ dictionary))))
+        (set-value~ combo #f)))
+    
     (define (setup-language)
+      (set! language 'primary)
       (let ((combo (locate 'language)))
         (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary))))
         (set-value~ combo 'primary)))
     
     (set! dictionary (get-current-dictionary))
-    (set! entries (collect-entries~ dictionary))
-    (set! language 'primary)
+    (setup-entries)
+    (setup-theme)
     (setup-language)
     (setup-words))
+  
+  
+  (method (setup-entries)
+    (set! entries (if theme
+                      (get-entries~ theme)
+                    (collect-entries~ dictionary))))
   
   
   (method (setup-words)
@@ -200,6 +219,15 @@
     (if (not entry)
         (bell)
       (edit-entry entry 'primary)))
+  
+  
+  (method (on-theme evt)
+    (set! theme (get-value~ (get-sender~ evt)))
+    (setup-entries)
+    (setup-words)
+    (display "" "")
+    (display-note "")
+    (focus-entries))
   
   
   (method (on-language evt)
