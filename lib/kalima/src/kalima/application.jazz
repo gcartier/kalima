@@ -33,6 +33,7 @@
 ;; - add, remove, reorder, group, ... themes
 ;; - while studying change primary of an entry, save review -> error
 ;; - validate duplicate dictionary entries
+;; - keep statistics of success / failure for each word
 
 
 ;;;

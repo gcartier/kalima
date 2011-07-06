@@ -179,7 +179,7 @@
           (for-each (lambda (entry)
                       (let ((title (getter entry)))
                         (add-row~ tree children: (list (new Tree-Node title: title)) user-data: entry)))
-                    (sort di<? entries key: getter))))))
+                    (di-sort-ascending entries key: getter))))))
   
   
   ;;;
@@ -755,7 +755,7 @@
                             (note (get-note~ entry))
                             (themes (present-themes entry)))
                         (add-row~ tree children: (list (new Tree-Node title: primary) (new Tree-Label title: secondary) (new Tree-Label title: note) (new Tree-Label title: themes)) user-data: entry)))
-                    (sort di<? entries key: get-primary~))))
+                    (di-sort-ascending entries key: get-primary~))))
       (let ((primary (get-primary~ dictionary))
             (secondary (get-secondary~ dictionary)))
         (set-title~ (locate 'primary) primary)

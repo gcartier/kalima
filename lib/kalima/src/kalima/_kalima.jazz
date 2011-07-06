@@ -73,7 +73,7 @@
       
       (define (print-entries entries)
         (format port "(")
-        (let ((all (sort di<? (table-values entries) key: get-primary~)))
+        (let ((all (di-sort-ascending (table-values entries) key: get-primary~)))
           (loop (for entry in all remainder remain)
                 (print-entry entry (null? remain))))
         (format port "){%}"))
