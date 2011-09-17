@@ -338,6 +338,8 @@
         (<Separator>                                     size: {Dimension 8 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "New Theme..." resource: {Image-Resource "ImportConfiguration"} portfolio: :images action-handler: {Event-Handler :form on-new-theme})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Augment Theme..." resource: {Image-Resource "ImportNew"} portfolio: :images action-handler: {Event-Handler :form on-augment-theme})
+        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Session" resource: {Image-Resource "Save"} portfolio: :images action-handler: {Event-Handler :form on-save-session})
+        (<Separator>                                     location: tail size: {Dimension 20 0})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Decrease Text" resource: {Image-Resource "FindNext"} portfolio: :images action-handler: {Event-Handler :form on-decrease})
         (<Separator>                                     location: tail size: {Dimension 2 0})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Increase Text" resource: {Image-Resource "FindPrevious"} portfolio: :images action-handler: {Event-Handler :form on-increase})
@@ -494,27 +496,45 @@
   
   
   (method (on-new-theme evt)
-    (save-theme #f))
+    (let ((subject (request-subject "New Theme")))
+      (save-theme subject entries)))
   
   
   (method (on-augment-theme evt)
-    (save-theme #t))
+    (let ((subject (request-subject "Augment Theme")))
+      (save-theme subject entries augment?: #t)))
   
   
-  (method (save-theme augment?)
-    (let ((subject (request-string title: (if augment? "Augment Theme" "New Theme") prefix: "Subject:" initial-value: "Review"))
-          (references (map get-primary~ entries)))
+  (method (on-save-session evt)
+    (save-theme "<Review>" review augment?: #t select?: #f)
+    (save-theme "<Session>" entries))
+  
+  
+  (method (request-subject title (prefix: prefix #f) (initial-value: initial-value #f))
+    (let ((prefix (or prefix "Subject:"))
+          (initial-value (or initial-value "<Review>")))
+      (request-string title: title prefix: prefix initial-value: initial-value)))
+  
+  
+  (method (save-theme subject entries (augment?: augment? #f) (select?: select? #t))
+    (let ((references (map get-primary~ entries)))
       (let ((actual (find-theme~ dictionary subject)))
         (let ((theme (new Kalima-Theme dictionary subject (if (and actual augment?)
                                                               (remove-duplicates (append (map get-primary~ (get-entries~ actual)) references) test: equal?)
                                                             references))))
           (replace-theme~ dictionary theme)
           (setup-subjects)
-          (let ((tree (locate 'subjects)))
-            (let ((row (user-data-row~ tree theme)))
-              (let ((checkbox (first-child~ row)))
-                (set-checked?~ checkbox #t)
-                (subjects-update))))))))
+          (when select?
+            (select-theme theme))
+          theme))))
+  
+  
+  (method (select-theme theme)
+    (let ((tree (locate 'subjects)))
+      (let ((row (user-data-row~ tree theme)))
+        (let ((checkbox (first-child~ row)))
+          (set-checked?~ checkbox #t)
+          (subjects-update)))))
   
   
   (method (on-decrease evt)
