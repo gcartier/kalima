@@ -397,11 +397,11 @@
     (set! ask 'primary)
     (setup-select)
     (setup-ask)
-    (setup-subjects)
+    (setup-subjects selected: '("<Session>"))
     (subjects-update))
   
   
-  (method (setup-subjects)
+  (method (setup-subjects (selected: selected '()))
     (define (collect-subjects)
       (let ((queue (new-queue)))
         (for-each (lambda (theme)
@@ -417,8 +417,9 @@
           (for-each (lambda (info)
                       (bind (subject . theme) info
                         (let ((handler (new Event-Handler execute: (lambda (evt) (subjects-update)))))
-                          (let ((node (new Check-Box title: subject checked?: #f content-change-handler: handler)))
-                            (add-row~ tree children: (list node) user-data: theme)))))
+                          (let ((checked? (member? subject selected)))
+                            (let ((node (new Check-Box title: subject checked?: checked? content-change-handler: handler)))
+                              (add-row~ tree children: (list node) user-data: theme))))))
                     (collect-subjects))))))
   
   
@@ -505,9 +506,19 @@
       (save-theme subject entries augment?: #t)))
   
   
-  (method (on-save-session evt)
-    (save-theme "<Review>" review augment?: #t select?: #f)
-    (save-theme "<Session>" entries))
+  (method (on-augment-session evt)
+    (on-save-session #t))
+  
+  
+  (method (on-replace-session evt)
+    (on-save-session #f))
+  
+  
+  (method (on-save-session augment?)
+    (let ((review-selected? (theme-selected? "<Review>"))
+          (session-selected? (theme-selected? "<Session>")))
+      (save-theme "<Review>" review augment?: (and augment? (not review-selected?)) select?: #f)
+      (save-theme "<Session>" entries augment?: (and augment? (not session-selected?)))))
   
   
   (method (request-subject title (prefix: prefix #f) (initial-value: initial-value #f))
@@ -519,7 +530,7 @@
   (method (save-theme subject entries (augment?: augment? #f) (select?: select? #t))
     (let ((references (map get-primary~ entries)))
       (let ((actual (find-theme~ dictionary subject)))
-        (let ((theme (new Kalima-Theme dictionary subject (if (and actual augment?)
+        (let ((theme (new Kalima-Theme dictionary subject (if (and augment? actual)
                                                               (remove-duplicates (append (map get-primary~ (get-entries~ actual)) references) test: equal?)
                                                             references))))
           (replace-theme~ dictionary theme)
@@ -535,6 +546,16 @@
         (let ((checkbox (first-child~ row)))
           (set-checked?~ checkbox #t)
           (subjects-update)))))
+  
+  
+  (method (theme-selected? subject)
+    (let ((theme (find-theme~ dictionary subject)))
+      (when theme
+        (let ((tree (locate 'subjects)))
+          (let ((row (user-data-row~ tree theme)))
+            (let ((checkbox (first-child~ row)))
+              (debug checkbox (get-checked?~ checkbox))
+              (get-checked?~ checkbox)))))))
   
   
   (method (on-decrease evt)
@@ -681,12 +702,14 @@
 
   (form
     (<install>
-      (<Action-Item> name: review        action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
-      (<Action-Item> name: new-theme     action-handler: {Event-Handler :focus-guest on-new-theme} shortcut: {Shortcut :alt #\S})
-      (<Action-Item> name: augment-theme action-handler: {Event-Handler :focus-guest on-augment-theme} shortcut: {Shortcut :alt #\T})
-      (<Action-Item> name: increase      action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
-      (<Action-Item> name: decrease      action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
-      (<Action-Item> name: edit          action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
+      (<Action-Item> name: review          action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
+      (<Action-Item> name: new-theme       action-handler: {Event-Handler :focus-guest on-new-theme} shortcut: {Shortcut :alt #\N})
+      (<Action-Item> name: augment-theme   action-handler: {Event-Handler :focus-guest on-augment-theme} shortcut: {Shortcut :alt #\A})
+      (<Action-Item> name: augment-session action-handler: {Event-Handler :focus-guest on-augment-session} shortcut: {Shortcut :alt #\S})
+      (<Action-Item> name: replace-session action-handler: {Event-Handler :focus-guest on-replace-session} shortcut: {Shortcut :alt :shift #\S})
+      (<Action-Item> name: increase        action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
+      (<Action-Item> name: decrease        action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
+      (<Action-Item> name: edit            action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
 
 
 ;;;

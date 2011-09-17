@@ -197,9 +197,10 @@
   
   (method public (replace-theme theme)
     (let ((actual (find-theme (get-subject~ theme))))
-      (when actual
-        (remove-theme actual))
-      (add-theme theme)))
+      (if (not actual)
+          (add-theme theme)
+        (set! themes (substitute actual theme themes))
+        (set! modified? #t))))
   
   
   (method public (collect-themes entry)
