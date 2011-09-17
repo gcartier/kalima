@@ -417,8 +417,9 @@
           (for-each (lambda (info)
                       (bind (subject . theme) info
                         (let ((handler (new Event-Handler execute: (lambda (evt) (subjects-update)))))
-                          (let ((checked? (member? subject selected)))
-                            (let ((node (new Check-Box title: subject checked?: checked? content-change-handler: handler)))
+                          (let ((title (if (starts-with? subject "<") (format "{a} ({a})" subject (length (get-entries~ theme))) subject))
+                                (checked? (member? subject selected)))
+                            (let ((node (new Check-Box title: title checked?: checked? content-change-handler: handler)))
                               (add-row~ tree children: (list node) user-data: theme))))))
                     (collect-subjects))))))
   
@@ -554,7 +555,6 @@
         (let ((tree (locate 'subjects)))
           (let ((row (user-data-row~ tree theme)))
             (let ((checkbox (first-child~ row)))
-              (debug checkbox (get-checked?~ checkbox))
               (get-checked?~ checkbox)))))))
   
   
