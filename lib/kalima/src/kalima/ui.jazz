@@ -103,7 +103,7 @@
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Edit" resource: {Image-Resource "Script"} portfolio: :images action-handler: {Event-Handler :form on-edit})
         (<Separator>                                     location: tail size: {Dimension 2 0}))
       (<Border-View>                                     location: center border-type: edge style: entry
-        (<Splitter-View>                                 background: {Color White} orientation: horz division: 175
+        (<Splitter-View>                                 background: {Color White} orientation: horz mode: absolute division: 175
           (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
             (<!>                        name: content    layout-type: fill
               (<Tree-View>              name: entries    portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
@@ -346,7 +346,7 @@
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Edit" resource: {Image-Resource "Script"} portfolio: :images action-handler: {Event-Handler :form on-edit})
         (<Separator>                                     location: tail size: {Dimension 2 0}))
       (<Border-View>                                     location: center border-type: edge style: entry
-        (<Splitter-View>                                 background: {Color White} orientation: horz division: 125
+        (<Splitter-View>                                 background: {Color White} orientation: horz mode: absolute division: 125
           (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
             (<!>                        name: content    layout-type: fill
               (<Tree-View>              name: subjects   multiple-selection?: #t portfolio: :images
@@ -742,7 +742,7 @@
         (<Separator>                                     size: {Dimension 4 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Remove Entry" resource: {Image-Resource "Remove"} portfolio: :images action-handler: {Event-Handler :form on-remove}))
       (<Border-View>                                     location: center border-type: edge style: entry
-        (<Splitter-View>                                 background: {Color White} orientation: vert division: -183
+        (<Splitter-View>                                 background: {Color White} orientation: vert mode: absolute division: -183
           (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
             (<!>                         name: content   layout-type: fill
               (<Tree-Header>                             style: document
