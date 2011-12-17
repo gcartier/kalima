@@ -319,7 +319,6 @@
   (slot language   initialize #f)
   (slot stage      initialize #f)
   (slot right      initialize #f)
-  (slot wrong      initialize #f)
   (slot review     initialize #f)
   
   
@@ -445,8 +444,7 @@
   (method (setup-entries lst)
     (set! entries lst)
     (set! stage 'question)
-    (set! right 0)
-    (set! wrong 0)
+    (set! right '())
     (set! review '())
     (ask-word))
   
@@ -579,7 +577,7 @@
   (method override (key-press key)
     (case key
       ((#\space)
-       (wrong-answer))))
+       (review-answer))))
   
   
   (method override (return-press key)
@@ -626,14 +624,14 @@
   
   (method (right-answer)
     (when entry
-      (increase! right)
       (set! entries (remove entry entries))
+      (unless (memq? entry right)
+        (set! right (cons entry right)))
       (ask-word)))
   
   
-  (method (wrong-answer)
+  (method (review-answer)
     (when entry
-      (increase! wrong)
       (set! entries (remove entry entries))
       (unless (memq? entry review)
         (set! review (cons entry review)))
@@ -689,7 +687,7 @@
   
   (method (statistics)
     (let ((label (locate 'statistics)))
-      (set-title~ label (format "Right: {a}, wrong: {a}, remaining: {a}" right wrong (length entries))))))
+      (set-title~ label (format "Right: {a}, review: {a}, remaining: {a}" (length right) (length review) (length entries))))))
 
 
 ;;;
