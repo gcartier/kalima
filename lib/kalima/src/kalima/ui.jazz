@@ -45,16 +45,17 @@
           (primary (locate 'primary))
           (secondary (locate 'secondary)))
       (let ((point-size (changer font-sizes (get-point-size~ (get-font~ primary)) cycle?: #f)))
-        (let ((font (new Font font-name: "Times New Roman" point-size: point-size)))
-          (let ((height (font-height~ font)))
-            (let ((spacer (fxround (/ height 5))))
-              (set-height~ entry (+ height spacer height))
-              (set-height~ primary height)
-              (set-font~ primary font)
-              (set-height~ secondary height)
-              (set-font~ secondary font)))))
-      (layout-view~ entry)
-      (layout-view~ center))))
+        (when point-size
+          (let ((font (new Font font-name: "Times New Roman" point-size: point-size)))
+            (let ((height (font-height~ font)))
+              (let ((spacer (fxround (/ height 5))))
+                (set-height~ entry (+ height spacer height))
+                (set-height~ primary height)
+                (set-font~ primary font)
+                (set-height~ secondary height)
+                (set-font~ secondary font))))
+          (layout-view~ entry)
+          (layout-view~ center))))))
 
 
 ;;;
