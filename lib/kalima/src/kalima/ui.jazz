@@ -336,7 +336,7 @@
         (<Separator>                                     size: {Dimension 14 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Review" resource: {Image-Resource "Edit"} portfolio: :images action-handler: {Event-Handler :form on-review})
         (<Separator>                                     size: {Dimension 8 0})
-        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "New Theme..." resource: {Image-Resource "ImportConfiguration"} portfolio: :images action-handler: {Event-Handler :form on-new-theme})
+        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Theme..." resource: {Image-Resource "ImportConfiguration"} portfolio: :images action-handler: {Event-Handler :form on-save-theme})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Augment Theme..." resource: {Image-Resource "ImportNew"} portfolio: :images action-handler: {Event-Handler :form on-augment-theme})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Session" resource: {Image-Resource "Save"} portfolio: :images action-handler: {Event-Handler :form on-save-session})
         (<Separator>                                     location: tail size: {Dimension 20 0})
@@ -397,7 +397,7 @@
     (set! ask 'primary)
     (setup-select)
     (setup-ask)
-    (setup-subjects selected: '("<Session>"))
+    (setup-subjects)
     (subjects-update))
   
   
@@ -496,8 +496,8 @@
     (setup-entries review))
   
   
-  (method (on-new-theme evt)
-    (let ((subject (request-subject "New Theme")))
+  (method (on-save-theme evt)
+    (let ((subject (request-subject "Save Theme")))
       (save-theme subject entries)))
   
   
@@ -702,13 +702,13 @@
   (form
     (<install>
       (<Action-Item> name: review          action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
-      (<Action-Item> name: new-theme       action-handler: {Event-Handler :focus-guest on-new-theme} shortcut: {Shortcut :alt #\N})
-      (<Action-Item> name: augment-theme   action-handler: {Event-Handler :focus-guest on-augment-theme} shortcut: {Shortcut :alt #\A})
+      (<Action-Item> name: save-theme      action-handler: {Event-Handler :focus-guest on-save-theme} shortcut: {Shortcut :control #\S})
+      (<Action-Item> name: augment-theme   action-handler: {Event-Handler :focus-guest on-augment-theme} shortcut: {Shortcut :control #\A})
       (<Action-Item> name: augment-session action-handler: {Event-Handler :focus-guest on-augment-session} shortcut: {Shortcut :alt #\S})
       (<Action-Item> name: replace-session action-handler: {Event-Handler :focus-guest on-replace-session} shortcut: {Shortcut :alt :shift #\S})
       (<Action-Item> name: increase        action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
       (<Action-Item> name: decrease        action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
-      (<Action-Item> name: edit            action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
+      (<Action-Item> name: edit            action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :control #\E} alternate-shortcut: {Shortcut F2}))))
 
 
 ;;;

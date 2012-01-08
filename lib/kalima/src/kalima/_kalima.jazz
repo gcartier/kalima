@@ -219,9 +219,14 @@
   
   (method public (update-entry entry field content)
     (case field
-      ((primary) (set-primary~ entry content))
-      ((secondary) (set-secondary~ entry content))
-      ((note) (set-note~ entry content)))
+      ((primary)
+       (table-clear entries (get-primary~ entry))
+       (set-primary~ entry content)
+       (table-set! entries (get-primary~ entry) entry))
+      ((secondary)
+       (set-secondary~ entry content))
+      ((note)
+       (set-note~ entry content)))
     (set! modified? #t)
     (process-entry-change entry))
   
