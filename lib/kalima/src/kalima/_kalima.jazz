@@ -68,12 +68,12 @@
               (secondary (get-secondary~ dictionary)))
           (print-header secondary)
           (format port "(primary: \"{a}\" secondary: \"{a}\"){%}{%}{%}" primary secondary)
-          (print-entries (get-entries~ dictionary))
+          (print-entries (collect-entries~ dictionary))
           (print-themes (get-themes~ dictionary))))
       
       (define (print-entries entries)
         (format port "(")
-        (let ((all (di-sort-ascending (table-values entries) key: get-primary~)))
+        (let ((all (di-sort-ascending entries key: get-primary~)))
           (loop (for entry in all remainder remain)
                 (print-entry entry (null? remain))))
         (format port "){%}"))
@@ -163,13 +163,20 @@
     )
   
   
+  (method public (find-entry key)
+    (let ((entries (table-ref entries key '())))
+      (if (not-null? entries)
+          (car entries)
+        #f)))
+  
+  
   (method public (get-entry key)
-    (or (table-ref entries key #f)
+    (or (find-entry key)
         (error "Unable to find entry: {a}" key)))
   
   
   (method public (add-entry entry)
-    (table-set! entries (get-primary~ entry) entry)
+    (table-add entries (get-primary~ entry) entry)
     (set! modified? #t))
   
   
@@ -177,7 +184,7 @@
     (for-each (lambda (theme)
                 (remove-entry~ theme entry))
               themes)
-    (table-clear entries (get-primary~ entry))
+    (table-remove! entries (get-primary~ entry) entry)
     (set! modified? #t))
   
   
@@ -214,15 +221,20 @@
   
   
   (method public (collect-entries)
-    (table-values entries))
+    (let ((queue (new-queue)))
+      (for-each (lambda (entries)
+                  (enqueue-list queue entries))
+                (table-values entries))
+      (queue-list queue)))
   
   
   (method public (update-entry entry field content)
     (case field
       ((primary)
-       (table-clear entries (get-primary~ entry))
-       (set-primary~ entry content)
-       (table-set! entries (get-primary~ entry) entry))
+       (let ((primary (get-primary~ entry)))
+         (table-remove! entries primary entry)
+         (set-primary~ entry content)
+         (table-add entries content entry)))
       ((secondary)
        (set-secondary~ entry content))
       ((note)
