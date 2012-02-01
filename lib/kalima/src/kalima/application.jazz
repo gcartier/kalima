@@ -26,14 +26,14 @@
 
 
 ;; TODO
+;; - add a save dictionary
+;; - save review seems broken
+;; - backward / forward in study
 ;; - button to redo the study (including the review)
 ;; - save font size in preferences
-;; - backward / forward in study
 ;; - until an interface to reorder them, present themes sorted
 ;; - add, remove, reorder, group, ... themes
-;; - validate duplicate dictionary entries
 ;; - keep statistics of success / failure for each word
-;; - new edited entries are lost unless a theme is entered
 
 
 ;;;
@@ -277,6 +277,7 @@
       (<Kalima-Actions>        name: kalima)
       (<Kalima-Browse-Actions> name: kalima-browse)
       (<Kalima-Study-Actions>  name: kalima-study)
+      (<Kalima-Edit-Actions>   name: kalima-edit)
       
       ;; emacs
       (<view~>

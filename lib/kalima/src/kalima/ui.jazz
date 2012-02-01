@@ -821,6 +821,16 @@
   
   
   ;;;
+  ;;;; Actions
+  ;;;
+  
+
+  (method override (guest-actions)
+    (cons (find-actions 'kalima-edit)
+          (nextmethod)))
+  
+  
+  ;;;
   ;;;; Events
   ;;;
   
@@ -830,7 +840,8 @@
           (entry (new Kalima-Entry "" "" "")))
       (add-entry~ dictionary entry)
       (setup-entries)
-      (select-user-data-row~ tree entry)))
+      (select-user-data-row~ tree entry)
+      (acquire-focus~ (locate '(entry primary)))))
   
   
   (method (on-remove evt)
@@ -877,6 +888,19 @@
                         (get-guest~ frame))
                     (get-guest~ (new-frame Kalima-Edit-View)))))
       (select-entries~ editor (list entry) field))))
+
+
+;;;
+;;;; Edit-Actions
+;;;
+
+
+(class Kalima-Edit-Actions extends Actions
+
+
+  (form
+    (<install>
+      (<Action-Item> name: add action-handler: {Event-Handler :focus-guest on-add} shortcut: {Shortcut :alt #\A}))))
 
 
 ;;;
