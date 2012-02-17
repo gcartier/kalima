@@ -57,7 +57,7 @@
   
   
   (method override (process-icon)
-    "Doc")
+    "WebServer")
   
   
   (method override (process-version)

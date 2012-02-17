@@ -7,7 +7,7 @@
                                kalima.application
                                kalima.run
                                kalima.ui)
-                       (build (kalima))
+                       (build (kalima resources: "resources"))
                        (dependencies jazz
                                      jazz.debuggee
                                      jazz.designer
