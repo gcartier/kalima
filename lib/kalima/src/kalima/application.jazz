@@ -10,6 +10,7 @@
 
 
 (import (jazz.debuggee)
+        (jazz.graphic)
         (jazz.io)
         (jazz.jml)
         (jazz.library)
@@ -26,11 +27,8 @@
 
 
 ;; TODO
-;; - If I zoom Browse to max, Kataba is clipped
 ;; - Fix the duplicate entries bug
-;; - save font size in settings
 ;; - add a save dictionary
-;; - save review seems broken
 ;; - backward / forward in study
 ;; - button to redo the study (including the review)
 ;; - until an interface to reorder them, present themes sorted
@@ -182,7 +180,8 @@
     (nextmethod)
     (let ((dictionary (get-current-dictionary)))
       (when (and dictionary (get-modified?~ dictionary))
-        (save~ dictionary))))
+        (save~ dictionary)))
+    (save-content~ settings))
 
   
   ;;;
@@ -209,7 +208,6 @@
   (method (open-dictionary-file file)
     (set-current-dictionary (load-dictionary file))
     (set-setting~ settings 'kalima.dictionary file)
-    (save-content~ settings)
     (set-caption-base~ (get-toplevel) (format "Kalima {a}" (capitalize (get-base~ file)))))
   
   

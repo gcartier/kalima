@@ -22,13 +22,25 @@
         (kalima))
 
 
-(define font-sizes
+;;;
+;;;; Font
+;;;
+
+
+(define Kalima-Font-Sizes
   '(18 24 36 48 72))
 
 
 (define-font Kalima
   font-name: "Times New Roman"
   point-size: 36)
+
+
+(definition public (get-kalima-point-size)
+  (get-setting 'kalima.point-size 36))
+
+(definition public (set-kalima-point-size point-size)
+  (set-setting~ (get-settings~ (get-application)) 'kalima.point-size point-size))
 
 
 ;;;
@@ -39,23 +51,32 @@
 (class Kalima-View extends Layout-View
   
   
+  (slot point-size initialize #f)
+  
+  
   (method (change-size changer)
+    (let ((new-point-size (changer Kalima-Font-Sizes (or point-size (get-kalima-point-size)) cycle?: #f)))
+      (when new-point-size
+        (set-kalima-point-size new-point-size)
+        (set! point-size new-point-size)
+        (size-update))))
+  
+  
+  (method (size-update)
     (let ((center (locate 'center))
           (entry (locate 'entry))
           (primary (locate 'primary))
           (secondary (locate 'secondary)))
-      (let ((point-size (changer font-sizes (get-point-size~ (get-font~ primary)) cycle?: #f)))
-        (when point-size
-          (let ((font (new Font font-name: "Times New Roman" point-size: point-size)))
-            (let ((height (font-height~ font)))
-              (let ((spacer (fxround (/ height 5))))
-                (set-height~ entry (+ height spacer height))
-                (set-height~ primary height)
-                (set-font~ primary font)
-                (set-height~ secondary height)
-                (set-font~ secondary font))))
-          (layout-view~ entry)
-          (layout-view~ center))))))
+      (let ((font (new Font font-name: "Times New Roman" point-size: (or point-size (get-kalima-point-size)))))
+        (let ((height (font-height~ font)))
+          (let ((spacer (fxround (/ height 5))))
+            (set-height~ entry (+ height spacer height))
+            (set-height~ primary height)
+            (set-font~ primary font)
+            (set-height~ secondary height)
+            (set-font~ secondary font))))
+      (layout-view~ entry)
+      (layout-view~ center))))
 
 
 ;;;
@@ -120,6 +141,7 @@
   
   (method override (finish rest)
     (nextmethod rest)
+    (size-update)
     (setup)
     (add-listener~ dictionary self))
   
@@ -367,6 +389,7 @@
   
   (method override (finish rest)
     (nextmethod rest)
+    (size-update)
     (random-seed)
     (setup)
     (add-listener~ dictionary self))
