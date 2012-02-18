@@ -111,9 +111,9 @@
                 (<Tree-Node-Column>                      title: "Word" display-images?: #f toplevel-controls?: #f width: 419))))
           (<Layout-View>                                 location: second layout-type: border
             (<Layout-View>              name: center     location: center layout-type: center
-              (<Layout-View>            name: entry      layout-type: border size: {Dimension 600 110}
-                (<Label-View>           name: primary    location: north size: {Dimension 600 50} justification: center font: {Font Kalima})
-                (<Label-View>           name: secondary  location: south size: {Dimension 600 50} justification: center font: {Font Kalima})))
+              (<Layout-View>            name: entry      layout-type: border size: {Dimension 4000 110}
+                (<Label-View>           name: primary    location: north size: {Dimension 4000 50} justification: center font: {Font Kalima})
+                (<Label-View>           name: secondary  location: south size: {Dimension 4000 50} justification: center font: {Font Kalima})))
             (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
               (<Label-View>             name: note)))))))
   
