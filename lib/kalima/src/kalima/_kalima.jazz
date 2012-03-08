@@ -216,6 +216,22 @@
                 themes))
   
   
+  (method public (get-sorted-themes)
+    (sort (lambda (x y)
+            (let ((cx (starts-with? x "<"))
+                  (cy (starts-with? y "<")))
+              (cond ((and (not cx) cy) #t)
+                    ((and cx (not cy)) #f)
+                    (else (di<? x y)))))
+          themes key: get-subject~))
+  
+  
+  (method public (present-entry-themes entry)
+    (let ((themes (collect-themes entry)))
+      (when (not-null? themes)
+        (join (map get-subject~ themes) ", "))))
+  
+  
   (method public (collect-subjects)
     (map get-subject~ themes))
   

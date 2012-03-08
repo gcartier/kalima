@@ -91,7 +91,7 @@
     {Image-Resource "Doc"})
   
   (method meta override (host-title)
-    {Locales english: "Browse" french: "Consulter"})
+    {Locales english: "Dictionary" french: "Dictionnaire"})
   
   (method meta override (host-position)
     {Point 834 25})
@@ -135,7 +135,7 @@
               (<Layout-View>            name: entry      layout-type: border size: {Dimension 4000 110}
                 (<Label-View>           name: primary    location: north size: {Dimension 4000 50} justification: center font: {Font Kalima})
                 (<Label-View>           name: secondary  location: south size: {Dimension 4000 50} justification: center font: {Font Kalima})))
-            (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
+            (<Layout-View>                               size: {Dimension 400 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
               (<Label-View>             name: note)))))))
   
   
@@ -169,7 +169,7 @@
   (method (setup)
     (define (setup-theme)
       (let ((combo (locate 'theme)))
-        (set-choices~ combo `((#f "All") ,@(map (lambda (theme) (list theme (get-subject~ theme))) (get-themes~ dictionary))))
+        (set-choices~ combo `((#f "All") ,@(map (lambda (theme) (list theme (get-subject~ theme))) (get-sorted-themes~ dictionary))))
         (set-value~ combo #f)))
     
     (define (setup-language)
@@ -249,7 +249,7 @@
     (setup-entries)
     (setup-words)
     (display "" "")
-    (display-note "")
+    (display-note "" #f)
     (focus-entries))
   
   
@@ -257,7 +257,7 @@
     (set! language (get-value~ (get-sender~ evt)))
     (setup-words)
     (display "" "")
-    (display-note "")
+    (display-note "" #f)
     (focus-entries))
   
   
@@ -280,9 +280,10 @@
   (method (update)
     (let ((primary (get-primary~ entry))
           (secondary (get-secondary~ entry))
-          (note (get-note~ entry)))
+          (note (get-note~ entry))
+          (themes (present-entry-themes~ dictionary entry)))
       (display primary secondary)
-      (display-note note)))
+      (display-note note themes)))
   
   
   (method (display primary secondary)
@@ -294,9 +295,11 @@
       (set-title~ label secondary)))
   
   
-  (method (display-note text)
+  (method (display-note text themes)
     (let ((label (locate 'note)))
-      (set-title~ label text))))
+      (if (empty-string? text)
+          (set-title~ label (format "{?{a}~}" themes))
+        (set-title~ label (format "{a}{? : {a}~}" text themes))))))
 
 
 ;;;
@@ -371,7 +374,7 @@
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Edit" resource: {Image-Resource "Script"} portfolio: :images action-handler: {Event-Handler :form on-edit})
         (<Separator>                                     location: tail size: {Dimension 2 0}))
       (<Border-View>                                     location: center border-type: edge style: entry
-        (<Splitter-View>                                 background: {Color White} orientation: horz mode: absolute division: 125
+        (<Splitter-View>                                 background: {Color White} orientation: horz mode: absolute division: 150
           (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
             (<!>                        name: content    layout-type: fill
               (<Tree-View>              name: subjects   multiple-selection?: #t portfolio: :images
@@ -383,8 +386,8 @@
                 (<Label-View>           name: secondary  location: south size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})))
             (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 4 0}
               (<Layout-View>                             layout-type: border
-                (<Label-View>           name: note       size: {Dimension 100 20} location: west)
-                (<Label-View>           name: statistics size: {Dimension 250 20} location: east justification: tail))))))))
+                (<Label-View>           name: note       size: {Dimension 400 20} location: west)
+                (<Label-View>           name: statistics size: {Dimension 400 20} location: east justification: tail))))))))
   
   
   (method override (finish rest)
@@ -432,7 +435,7 @@
         (for-each (lambda (theme)
                     (let ((subject (get-subject~ theme)))
                       (enqueue queue (cons subject theme))))
-                  (get-themes~ dictionary))
+                  (get-sorted-themes~ dictionary))
         (queue-list queue)))
     
     (let ((tree (locate 'subjects)))
@@ -677,17 +680,18 @@
     (if (not entry)
         (begin
           (display "" "")
-          (display-note ""))
+          (display-note "" #f))
       (let ((primary (get-primary~ entry))
             (secondary (get-secondary~ entry))
-            (note (get-note~ entry)))
+            (note (get-note~ entry))
+            (themes (present-entry-themes~ dictionary entry)))
         (if (or (eq? ask :both)
                 (eq? stage 'answer))
             (display primary secondary)
           (case language
             ((primary) (display primary ""))
             ((secondary) (display "" secondary))))
-        (display-note note)))
+        (display-note note themes)))
     (statistics))
   
   
@@ -710,9 +714,11 @@
       (set-title~ label secondary)))
   
   
-  (method (display-note text)
+  (method (display-note text themes)
     (let ((label (locate 'note)))
-      (set-title~ label text)))
+      (if (empty-string? text)
+          (set-title~ label (format "{?{a}~}" themes))
+        (set-title~ label (format "{a}{? : {a}~}" text themes)))))
   
   
   (method (statistics)
@@ -810,12 +816,6 @@
   
   
   (method (setup-entries)
-    (define (present-themes entry)
-      (let ((themes (collect-themes~ dictionary entry)))
-        (if (null? themes)
-            ""
-          (join (map get-subject~ themes) ", "))))
-    
     (let ((entries (collect-entries~ dictionary))
           (tree (locate 'entries)))
       (remove-every-row~ tree)
@@ -825,7 +825,7 @@
                       (let ((primary (get-primary~ entry))
                             (secondary (get-secondary~ entry))
                             (note (get-note~ entry))
-                            (themes (present-themes entry)))
+                            (themes (or (present-entry-themes~ dictionary entry) "")))
                         (add-row~ tree children: (list (new Tree-Node title: primary) (new Tree-Label title: secondary) (new Tree-Label title: note) (new Tree-Label title: themes)) user-data: entry)))
                     (di-sort-ascending entries key: get-primary~))))
       (let ((primary (get-primary~ dictionary))
@@ -986,7 +986,7 @@
     
     (define (setup-theme name theme)
       (let ((combo (locate name)))
-        (set-choices~ combo (cons (list #f "<None>") (map (lambda (theme) (list theme (get-subject~ theme))) (get-themes~ dictionary))))
+        (set-choices~ combo (cons (list #f "<None>") (map (lambda (theme) (list theme (get-subject~ theme))) (get-sorted-themes~ dictionary))))
         (set-value~ combo theme)))
     
     (set! entries~self entries)

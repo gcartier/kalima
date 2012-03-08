@@ -27,12 +27,11 @@
 
 
 ;; TODO
-;; - fix the duplicate entries bug
 ;; - add a save dictionary
 ;; - backward / forward in study
 ;; - button to redo the study (including the review)
-;; - until an interface to reorder them, present themes sorted
 ;; - add, remove, reorder, group, ... themes
+;; - fix the duplicate entries bug
 ;; - keep statistics of success / failure for each word
 
 
@@ -341,7 +340,7 @@
       (<Action-Item> name: new      action-handler: {Event-Handler :application on-new-dictionary} shortcut: {Shortcut :control :alt #\N})
       (<Action-Item> name: open     action-handler: {Event-Handler :application on-open-dictionary} shortcut: {Shortcut :control :alt #\O})
       (<Action-Item> name: close    action-handler: {Event-Handler :application on-close-dictionary})
-      (<Action-Item> name: browse   action-handler: {Event-Handler :application on-browse} shortcut: {Shortcut :control :alt #\B})
+      (<Action-Item> name: browse   action-handler: {Event-Handler :application on-browse} shortcut: {Shortcut :control :alt #\D})
       (<Action-Item> name: study    action-handler: {Event-Handler :application on-study} shortcut: {Shortcut :control :alt #\S})
       (<Action-Item> name: edit     action-handler: {Event-Handler :application on-edit} shortcut: {Shortcut :control :alt #\E})
       (<Action-Item> name: keyboard action-handler: {Event-Handler :application on-keyboard} shortcut: {Shortcut :control :shift #\K})
@@ -383,7 +382,7 @@
       (lambda ()
         (new Label-Item parent: self name: 'file   content: (new Kalima-File-Menu))
         (new Label-Item parent: self name: 'edit   content: (new Edit-Base-Menu))
-        (new Label-Item parent: self name: 'kalima content: (new Dictionary-Menu))
+        (new Label-Item parent: self name: 'kalima content: (new Kalima-Menu))
         (new Label-Item parent: self name: 'window content: (new Kalima-Window-Menu))
         (new Label-Item parent: self name: 'help   content: (new Help-Menu))))))
 
@@ -409,16 +408,16 @@
 
 
 ;;;
-;;;; Dictionary-Menu
+;;;; Kalima-Menu
 ;;;
 
 
-(class Dictionary-Menu extends Menu
+(class Kalima-Menu extends Menu
   
   
   (form
-    (<install>           title: {Locales english: "Dictionary" french: "Dictionnaire"}
-      (<Label-Item>      title: {Locales english: "Browse" french: "Consulter"} icon: {Image-Resource "Doc"} action-handler: {Action kalima browse})
+    (<install>           title: {Locales english: "Kalima" french: "Kalima"}
+      (<Label-Item>      title: {Locales english: "Dictionary" french: "Dictionnaire"} icon: {Image-Resource "Doc"} action-handler: {Action kalima browse})
       (<Label-Item>      title: {Locales english: "Study" french: "Étudier"} icon: {Image-Resource "Pad"} action-handler: {Action kalima study})
       (<Label-Item>      title: {Locales english: "Edit" french: "Éditer"} icon: {Image-Resource "WorkspaceText"} action-handler: {Action kalima edit})
       (<Separator-Item>)
@@ -475,7 +474,7 @@
       (<Action-Icon> name: undo       tooltip-text: {Locales english: "Undo" french: "Annuler"} resource: {Image-Resource "Undo"} action-handler: {Action view undo})
       (<Action-Icon> name: redo       tooltip-text: {Locales english: "Redo" french: "Refaire"} resource: {Image-Resource "Redo"} action-handler: {Action view redo})
       (<Separator>)
-      (<Action-Icon> name: browse     tooltip-text: {Locales english: "Browse" french: "Consulter"} resource: {Image-Resource "Doc"} action-handler: {Action kalima browse})
+      (<Action-Icon> name: browse     tooltip-text: {Locales english: "Dictionary" french: "Dictionnaire"} resource: {Image-Resource "Doc"} action-handler: {Action kalima browse})
       (<Separator>)
       (<Action-Icon> name: study      tooltip-text: {Locales english: "Study" french: "Étudier"} resource: {Image-Resource "Pad"} action-handler: {Action kalima study})
       (<Separator>)
