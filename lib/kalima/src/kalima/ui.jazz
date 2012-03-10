@@ -790,7 +790,7 @@
                     (<Tree-Label-Column> name: note      title: "Note")
                     (<Tree-Label-Column> name: themes    title: "Themes" width: 200))))))
           (<Layout-View>                                 location: second layout-type: center
-            (<Kalima-Entry-View>         name: entry     size: {Dimension 570 80} location: center))))))
+            (<Kalima-Entry-View>         name: entry     size: {Dimension 787 80} location: center))))))
   
   
   (method override (finish rest)
@@ -970,7 +970,16 @@
         (<Combo-Box>                  name: theme2                    content-change-handler: {Event-Handler :form on-theme}))
       (<Label-View>                                   title: "Theme:" position: {Point 380 62} size: {Dimension 40 16} font: {Font Label})
       (<Border-View>                                                  position: {Point 426 60} size: {Dimension 140 20} border-color: {Color Entry-Border}
-        (<Combo-Box>                  name: theme3                    content-change-handler: {Event-Handler :form on-theme}))))
+        (<Combo-Box>                  name: theme3                    content-change-handler: {Event-Handler :form on-theme}))
+      (<Label-View>                                   title: "Theme:" position: {Point 597 2} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 643 0} size: {Dimension 140 20} border-color: {Color Entry-Border}
+        (<Combo-Box>                  name: theme4                    content-change-handler: {Event-Handler :form on-theme}))
+      (<Label-View>                                   title: "Theme:" position: {Point 597 32} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 643 30} size: {Dimension 140 20} border-color: {Color Entry-Border}
+        (<Combo-Box>                  name: theme5                    content-change-handler: {Event-Handler :form on-theme}))
+      (<Label-View>                                   title: "Theme:" position: {Point 597 62} size: {Dimension 40 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 643 60} size: {Dimension 140 20} border-color: {Color Entry-Border}
+        (<Combo-Box>                  name: theme6                    content-change-handler: {Event-Handler :form on-theme}))))
   
   
   (method (set-entries entries)
@@ -1002,12 +1011,16 @@
         (set-string-content~ (locate 'note) (or note ""))
         (setup-theme 'theme1 (unique-theme themes-list 1))
         (setup-theme 'theme2 (unique-theme themes-list 2))
-        (setup-theme 'theme3 (unique-theme themes-list 3)))))
+        (setup-theme 'theme3 (unique-theme themes-list 3))
+        (setup-theme 'theme4 (unique-theme themes-list 4))
+        (setup-theme 'theme5 (unique-theme themes-list 5))
+        (setup-theme 'theme6 (unique-theme themes-list 6)))))
   
   
   (method (on-theme evt)
     (define (collect-themes)
-      (remove-duplicates (collect get-value~ (list (locate 'theme1) (locate 'theme2) (locate 'theme3)))))
+      (remove-duplicates (collect get-value~ (list (locate 'theme1) (locate 'theme2) (locate 'theme3)
+                                                   (locate 'theme4) (locate 'theme5) (locate 'theme6)))))
     
     (let ((themes (collect-themes)))
       (for-each (lambda (entry)
