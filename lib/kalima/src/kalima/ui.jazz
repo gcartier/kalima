@@ -19,6 +19,7 @@
         (jazz.ui)
         (jazz.ui.clipboard)
         (jazz.ui.view)
+        (jazz.ui.window)
         (kalima))
 
 
@@ -91,7 +92,7 @@
     {Image-Resource "Doc"})
   
   (method meta override (host-title)
-    {Locales english: "Dictionary" french: "Dictionnaire"})
+    {Locales english: "Browse" french: "Consulter"})
   
   (method meta override (host-position)
     {Point 834 25})
@@ -346,6 +347,7 @@
   (slot stage      initialize #f)
   (slot right      initialize #f)
   (slot review     initialize #f)
+  (slot undoer     initialize #f)
   
   
   (form
@@ -392,6 +394,7 @@
   
   (method override (finish rest)
     (nextmethod rest)
+    (set! undoer (new Undoer))
     (size-update)
     (random-seed)
     (setup)
@@ -471,11 +474,36 @@
   
   
   (method (setup-entries lst)
+    (reset~ undoer)
     (set! entries lst)
     (set! stage 'question)
     (set! right '())
     (set! review '())
-    (ask-word))
+    (ask-word)
+    (delay-event
+      (lambda ()
+        (update-focus-actions~ (get-application)))))
+  
+  
+  ;;;
+  ;;;; Edition
+  ;;;
+  
+  
+  (method override (can-undo?)
+    (can-undo?~ undoer))
+  
+  
+  (method override (can-redo?)
+    (can-redo?~ undoer))
+  
+  
+  (method override (undo)
+    (undo~ undoer))
+  
+  
+  (method override (redo)
+    (redo~ undoer))
   
   
   ;;;
@@ -638,14 +666,18 @@
   
   
   (method (ask-word)
-    (if (null? entries)
+    (ask-entry (and (not-null? entries) (random-element entries))))
+  
+  
+  (method (ask-entry new-entry)
+    (if (not new-entry)
         (set! entry #f)
       (set! stage 'question)
       (set! language (case ask
                        ((:random) (random-element '(primary secondary)))
                        ((:both) 'secondary)
                        (else ask)))
-      (set! entry (random-element entries)))
+      (set! entry new-entry))
     (update))
   
   
@@ -657,18 +689,43 @@
   
   (method (right-answer)
     (when entry
+      (register-undo)
       (set! entries (remove entry entries))
       (unless (memq? entry right)
         (set! right (cons entry right)))
-      (ask-word)))
+      (ask-word)
+      (delay-event
+        (lambda ()
+          (update-focus-actions~ (get-application))))))
   
   
   (method (review-answer)
     (when entry
+      (register-undo)
       (set! entries (remove entry entries))
       (unless (memq? entry review)
         (set! review (cons entry review)))
-      (ask-word)))
+      (ask-word)
+      (delay-event
+        (lambda ()
+          (update-focus-actions~ (get-application))))))
+  
+  
+  (method (register-undo)
+    (register-undo~ undoer
+      (let ((entries entries)
+            (right right)
+            (review review)
+            (entry entry))
+          (lambda ()
+            (register-undo)
+            (set! entries~self entries)
+            (set! right~self right)
+            (set! review~self review)
+            (ask-entry entry)
+            (delay-event
+              (lambda ()
+                (update-focus-actions~ (get-application))))))))
   
   
   ;;;
