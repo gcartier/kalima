@@ -27,7 +27,6 @@
 
 
 ;; TODO
-;; - add a save dictionary
 ;; - add, remove, reorder, group, ... themes
 ;; - keep statistics of success / failure for each word
 
@@ -118,6 +117,15 @@
     (close-dictionary))
   
   
+  (method (on-save-dictionary evt)
+    (let ((dictionary (get-current-dictionary)))
+      (when (get-modified?~ dictionary)
+        (with-cursor :wait
+          (lambda ()
+            (save~ dictionary))))
+      (message-box "Dictionary saved")))
+  
+  
   (method (on-browse evt)
     (new-frame Kalima-Browse-View))
   
@@ -157,6 +165,7 @@
   (method public (update-kalima-actions)
     (let ((dictionary (get-current-dictionary)))
       (set-action-enabled? {Action kalima close} dictionary)
+      (set-action-enabled? {Action kalima save} dictionary)
       (set-action-enabled? {Action kalima browse} dictionary)
       (set-action-enabled? {Action kalima study} dictionary)
       (set-action-enabled? {Action kalima edit} dictionary)))
@@ -337,6 +346,7 @@
       (<Action-Item> name: new      action-handler: {Event-Handler :application on-new-dictionary} shortcut: {Shortcut :control :alt #\N})
       (<Action-Item> name: open     action-handler: {Event-Handler :application on-open-dictionary} shortcut: {Shortcut :control :alt #\O})
       (<Action-Item> name: close    action-handler: {Event-Handler :application on-close-dictionary})
+      (<Action-Item> name: save     action-handler: {Event-Handler :application on-save-dictionary})
       (<Action-Item> name: browse   action-handler: {Event-Handler :application on-browse} shortcut: {Shortcut :control :alt #\B})
       (<Action-Item> name: study    action-handler: {Event-Handler :application on-study} shortcut: {Shortcut :control :alt #\S})
       (<Action-Item> name: edit     action-handler: {Event-Handler :application on-edit} shortcut: {Shortcut :control :alt #\E})
@@ -397,6 +407,8 @@
       (<Label-Item>      title: {Locales english: "New Dictionary" french: "Nouveau Dictionnaire"} icon: {Image-Resource "New"} action-handler: {Action kalima new})
       (<Label-Item>      title: {Locales english: "Open Dictionary..." french: "Ouvrir Dictionnaire..."} icon: {Image-Resource "Open"} action-handler: {Action kalima open})
       (<Label-Item>      title: {Locales english: "Close Dictionary" french: "Fermer Dictionnaire"} action-handler: {Action kalima close})
+      (<Separator-Item>)
+      (<Label-Item>      title: {Locales english: "Save Dictionary" french: "Enregistrer Dictionnaire"} action-handler: {Action kalima save})
       (<Separator-Item>)
       (<Label-Item>      title: {Locales english: "Close Window" french: "Fermer la fenêtre"} action-handler: {Action application close})
       (<Label-Item>      title: {Locales english: "Close All Windows" french: "Fermer toutes les fenêtres"} action-handler: {Action application close-all})
