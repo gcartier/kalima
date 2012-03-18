@@ -541,7 +541,9 @@
           (let ((checkbox (first-child~ row)))
             (if checked?
                 (let ((subject (get-subject~ (get-user-data~ row))))
-                  (set-checked?~ checkbox (not (starts-with? subject "<"))))
+                  (let ((special? (or (starts-with? subject "~")
+                                      (starts-with? subject "<"))))
+                    (set-checked?~ checkbox (not special?))))
               (set-checked?~ checkbox #f))))))
     (subjects-update))
   
