@@ -539,7 +539,10 @@
       (for-each-visible-row~ tree
         (lambda (row line)
           (let ((checkbox (first-child~ row)))
-            (set-checked?~ checkbox checked?)))))
+            (if checked?
+                (let ((subject (get-subject~ (get-user-data~ row))))
+                  (set-checked?~ checkbox (not (starts-with? subject "<"))))
+              (set-checked?~ checkbox #f))))))
     (subjects-update))
   
   

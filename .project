@@ -10,6 +10,6 @@
 
 
 (form
-  (<Project> name: kalima description-file: {File :context ".repository"}
+  (<Project> name: kalima description-file: {File :context ".repository"} active-project: kalima:Kalima
     (<*>                  tag-reference: {File :context "jazz" ".project"})
     (<*>                  tag-reference: {File :context "lib" "kalima" ".project"}))))
