@@ -27,8 +27,9 @@
 
 
 ;; TODO
+;; - fix resize when trees are scrolled
+;; - add filtering to all toplevel views
 ;; - add, remove, reorder, group, ... themes
-;; - keep statistics of success / failure for each word
 
 
 ;;;
@@ -48,7 +49,7 @@
   
   
   (method override (process-copyright)
-    "2010-2011")
+    "2010-2012")
   
   
   (method override (process-icon)
@@ -426,8 +427,8 @@
   
   (form
     (<install>           title: {Locales english: "Kalima" french: "Kalima"}
-      (<Label-Item>      title: {Locales english: "Browse" french: "Consulter"} icon: {Image-Resource "Doc"} action-handler: {Action kalima browse})
       (<Label-Item>      title: {Locales english: "Study" french: "Étudier"} icon: {Image-Resource "Pad"} action-handler: {Action kalima study})
+      (<Label-Item>      title: {Locales english: "Browse" french: "Consulter"} icon: {Image-Resource "Doc"} action-handler: {Action kalima browse})
       (<Label-Item>      title: {Locales english: "Edit" french: "Éditer"} icon: {Image-Resource "WorkspaceText"} action-handler: {Action kalima edit})
       (<Separator-Item>)
       (<Label-Item>      title: {Locales english: "Keyboard" french: "Clavier"} icon: {Image-Resource "Build"} action-handler: {Action kalima keyboard}))))
@@ -483,9 +484,9 @@
       (<Action-Icon> name: undo       tooltip-text: {Locales english: "Undo" french: "Annuler"} resource: {Image-Resource "Undo"} action-handler: {Action view undo})
       (<Action-Icon> name: redo       tooltip-text: {Locales english: "Redo" french: "Refaire"} resource: {Image-Resource "Redo"} action-handler: {Action view redo})
       (<Separator>)
-      (<Action-Icon> name: browse     tooltip-text: {Locales english: "Browse" french: "Consulter"} resource: {Image-Resource "Doc"} action-handler: {Action kalima browse})
-      (<Separator>)
       (<Action-Icon> name: study      tooltip-text: {Locales english: "Study" french: "Étudier"} resource: {Image-Resource "Pad"} action-handler: {Action kalima study})
+      (<Separator>)
+      (<Action-Icon> name: browse     tooltip-text: {Locales english: "Browse" french: "Consulter"} resource: {Image-Resource "Doc"} action-handler: {Action kalima browse})
       (<Separator>)
       (<Action-Icon> name: edit       tooltip-text: {Locales english: "Edit" french: "Éditer"} resource: {Image-Resource "WorkspaceText"} action-handler: {Action kalima edit})
       (<Separator>)

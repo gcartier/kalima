@@ -640,13 +640,19 @@
     (acquire-focus~ self))
   
   
-  (method override (key-press key)
-    (case key
+  (method override (key-press evt)
+    (case (get-key~ evt)
       ((#\space)
-       (review-answer))))
+       (if (eq? ask :both)
+           (review-answer)
+         (case stage
+           ((question)
+            (show-answer))
+           ((answer)
+            (review-answer)))))))
   
   
-  (method override (return-press key)
+  (method override (return-press evt)
     (if (eq? ask :both)
         (right-answer)
       (case stage
@@ -656,7 +662,7 @@
          (right-answer)))))
   
   
-  (method override (tab-press key modifiers)
+  (method override (tab-press evt)
     (right-answer))
   
   
@@ -722,15 +728,15 @@
             (right right)
             (review review)
             (entry entry))
-          (lambda ()
-            (register-undo)
-            (set! entries~self entries)
-            (set! right~self right)
-            (set! review~self review)
-            (ask-entry entry)
-            (delay-event
-              (lambda ()
-                (update-focus-actions~ (get-application))))))))
+        (lambda ()
+          (register-undo)
+          (set! entries~self entries)
+          (set! right~self right)
+          (set! review~self review)
+          (ask-entry entry)
+          (delay-event
+            (lambda ()
+              (update-focus-actions~ (get-application))))))))
   
   
   ;;;
