@@ -22,6 +22,7 @@
         (jazz.ui)
         (jazz.ui.dialog)
         (jazz.ui.view)
+        (jazz.version)
         (kalima)
         (kalima.ui))
 
