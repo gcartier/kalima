@@ -38,7 +38,7 @@
 
 
 (definition public (get-kalima-point-size)
-  (get-setting 'kalima.point-size 36))
+  (find-setting 'kalima.point-size 36))
 
 (definition public (set-kalima-point-size point-size)
   (set-setting~ (get-settings~ (get-application)) 'kalima.point-size point-size))
