@@ -33,7 +33,7 @@
 
 
 (define-font Kalima
-  font-name: "Times New Roman"
+  font-name: 'vera-sans @windows "Times New Roman"
   point-size: 36)
 
 
@@ -68,7 +68,7 @@
           (entry (locate 'entry))
           (primary (locate 'primary))
           (secondary (locate 'secondary)))
-      (let ((font (new Font font-name: "Times New Roman" point-size: (or point-size (get-kalima-point-size)))))
+      (let ((font (new Font font-name: 'vera-sans @windows "Times New Roman" point-size: (or point-size (get-kalima-point-size)))))
         (let ((height (font-height~ font)))
           (let ((spacer (fxround (/ height 5))))
             (set-height~ entry (+ height spacer height))
