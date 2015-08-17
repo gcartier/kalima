@@ -10,6 +10,7 @@
 
 
 (import (jazz.editor.jazz)
+        (jazz.event)
         (jazz.graphic)
         (jazz.io)
         (jazz.jml)
