@@ -98,6 +98,7 @@
             (message-box (format "Unable to find dictionary: {a}" (parse~ file)))))))
     
     (nextmethod)
+    (maximize~ (current-stage))
     (reopen-dictionary)
     (update-kalima-actions))
 
@@ -232,7 +233,7 @@
   
   
   (form
-    (<install>                                     toplevel-state: maximized toolbar-classes: ((:menubar . {Reference Kalima-Menubar}) (:toolbar . {Reference Kalima-Toolbar}) (:status . {Reference Kalima-Status}))
+    (<install>                                     toolbar-classes: ((:menubar . {Reference Kalima-Menubar}) (:toolbar . {Reference Kalima-Toolbar}) (:status . {Reference Kalima-Status}))
       (<documents~>
         (<Plain-Text-Preferences> name: plain-text)))))
 
