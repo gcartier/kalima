@@ -9,7 +9,8 @@
 (module kalima.ui jazz
 
 
-(import (jazz.editor.jazz)
+(import (jazz.application)
+        (jazz.editor.jazz)
         (jazz.event)
         (jazz.graphic)
         (jazz.io)

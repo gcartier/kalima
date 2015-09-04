@@ -9,7 +9,7 @@
 (module kalima.application jazz
 
 
-(import (jazz.debuggee)
+(import (jazz.application)
         (jazz.graphic)
         (jazz.io)
         (jazz.jml)
@@ -18,7 +18,6 @@
         (jazz.locale.ui)
         (jazz.platform)
         (jazz.system)
-        (jazz.system.application)
         (jazz.ui)
         (jazz.ui.dialog)
         (jazz.ui.view)
