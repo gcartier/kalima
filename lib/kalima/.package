@@ -1,5 +1,9 @@
 (package kalima
   
+  (title "Kalima")
+  (description "Language learning application")
+  (authors "Guillaume Cartier")
+  (stage beta)
   (root "src")
   (products (kalima (title "Kalima")
                        (run kalima.run)
