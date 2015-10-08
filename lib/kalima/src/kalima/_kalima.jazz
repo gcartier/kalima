@@ -9,9 +9,7 @@
 (module kalima jazz
 
 
-(import (jazz.io)
-        (jazz.platform)
-        (jazz.system))
+(import (jazz.io))
 
 
 ;;;

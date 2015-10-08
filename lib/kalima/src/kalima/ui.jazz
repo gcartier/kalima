@@ -9,19 +9,25 @@
 (module kalima.ui jazz
 
 
-(import (jazz.application)
-        (jazz.editor.jazz)
+(import (jazz.action)
+        (jazz.application)
+        (jazz.clipboard)
         (jazz.event)
+        (jazz.feedback)
         (jazz.graphic)
-        (jazz.io)
+        (jazz.handler)
         (jazz.jml)
-        (jazz.library)
+        (jazz.layout)
         (jazz.locale)
-        (jazz.system)
+        (jazz.resource)
+        (jazz.settings)
+        (jazz.text)
+        (jazz.tree)
         (jazz.ui)
-        (jazz.ui.clipboard)
-        (jazz.ui.view)
-        (jazz.ui.window)
+        (jazz.undoer)
+        (jazz.view)
+        (jazz.window)
+        (jazz.workspace)
         (kalima))
 
 

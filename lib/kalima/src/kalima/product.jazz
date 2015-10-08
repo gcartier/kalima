@@ -1,0 +1,63 @@
+;;;==============
+;;;  JazzScheme
+;;;==============
+;;;
+;;;; Kalima Product
+;;;
+
+
+(module kalima.product jazz
+
+
+(import (jazz.io))
+
+
+;;;
+;;;; Build
+;;;
+
+
+(definition (build descriptor (unit: unit #f) (force?: force? #f))
+  (define (resources-dir)
+    (let ((bundle (product-descriptor-build-bundle descriptor)))
+      (if bundle
+          (new-directory~ {Directory Build} (format "{a}.app/Contents/Resources" bundle))
+        {Directory Build})))
+  
+  (define (macos-dir)
+    (let ((bundle (product-descriptor-build-bundle descriptor)))
+      (if bundle
+          (new-directory~ {Directory Build} (format "{a}.app/Contents/MacOS" bundle))
+        #f)))
+  
+  (let ((project-dir {Directory Kalima})
+        (resources-dir (resources-dir))
+        (macos-dir (macos-dir)))
+    (define (install-file path)
+      (let ((src (new-file~ project-dir path))
+            (dst (new-file~ resources-dir path)))
+        (install-file~ src dst
+          feedback: (lambda (action pathname)
+                      (build-feedback "; {a} {a}..." action (get-name~ pathname))))))
+    
+    (define (install-directory path (src #f) (dst #f))
+      (let ((src (new-directory~ project-dir (or src path)))
+            (dst (new-directory~ resources-dir (or dst path))))
+        (install-directory~ src dst
+          feedback: (let ((first? #t))
+                      (lambda (action pathname)
+                        (when first?
+                          (build-feedback "; {a} {a}..." action (get-name~ pathname))
+                          (set! first? #f)))))))
+    
+    (build-product-descriptor descriptor unit: unit force?: force?)
+    (initialize-aliases)))
+
+
+;;;
+;;;; Register
+;;;
+
+
+(register-product 'kalima
+  build: build))

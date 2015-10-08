@@ -10,15 +10,16 @@
 
 
 (import (jazz.project)
-(jazz.editor.jazz))
+        (jazz.editor.jazz))
 
 
 (form
-  (<Project>               name: kalima
+  (<Project>               name: kalima      description-file: {File :context ".package"}
     (<*>                                     tag-reference: {File :context "kalima.project"})
     (<Project-Directory>                     directory: {Directory :context "src"}
       (<Project-Directory>                   directory: {Directory :context "src" "kalima"}
         (<Jazz-File>       name: application source: {File :context "src" "kalima" "application.jazz"})
         (<Jazz-File>       name: run         source: {File :context "src" "kalima" "run.jazz"})
         (<Jazz-File>       name: _kalima     source: {File :context "src" "kalima" "_kalima.jazz"})
-        (<Jazz-File>       name: ui          source: {File :context "src" "kalima" "ui.jazz"}))))))
+        (<Jazz-File>       name: ui          source: {File :context "src" "kalima" "ui.jazz"})
+        (<Jazz-File>       name: product     source: {File :context "src" "kalima" "product.jazz"}))))))

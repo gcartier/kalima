@@ -9,19 +9,26 @@
 (module kalima.application jazz
 
 
-(import (jazz.application)
-        (jazz.graphic)
+(import (jazz.action)
+        (jazz.application)
+        (jazz.handler)
         (jazz.io)
         (jazz.jml)
-        (jazz.library)
+        (jazz.layout)
         (jazz.locale)
         (jazz.locale.ui)
-        (jazz.platform)
-        (jazz.system)
+        (jazz.menu)
+        (jazz.reference)
+        (jazz.resource)
+        (jazz.settings)
+        (jazz.text)
+        (jazz.text.preferences)
         (jazz.ui)
         (jazz.ui.dialog)
-        (jazz.ui.view)
         (jazz.version)
+        (jazz.view)
+        (jazz.window)
+        (jazz.workspace)
         (kalima)
         (kalima.ui))
 
@@ -49,7 +56,7 @@
   
   
   (method override (process-copyright)
-    "2010-2012")
+    "2010-2015")
   
   
   (method override (process-icon)
@@ -145,6 +152,19 @@
   
   
   (method (on-test evt)
+    (define (present title table)
+      (pp (cons title (cons (table-length table) (if (get-shift?~ evt) (sort nu<? (table-keys table)) '())))))
+    
+    (present 'ENVIRONMENT (get-environment))
+    (newline)
+    (present 'CATALOG (get-catalog))
+    @w
+    (call-with-output-file (path-settings {File Home "Devel" "env-loaded"})
+      (lambda (output)
+        (pretty-print (sort nu<? (table-keys (get-environment))) output)))
+    @w
+    (debug 'done)
+    @w
     (explore-views~ (current-view-debugger)))
   
   
