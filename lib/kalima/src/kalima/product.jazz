@@ -9,7 +9,8 @@
 (module kalima.product jazz
 
 
-(import (jazz.io))
+(import (jazz.io)
+        (jazz.product))
 
 
 ;;;
@@ -55,9 +56,30 @@
 
 
 ;;;
+;;;; Install
+;;;
+
+
+(cond-expand
+  (mac
+    (definition install-dir
+      {Directory Home "Devel" "install"}))
+  (else
+    (definition install-dir
+      {Directory Home "install"})))
+
+
+(definition (install descriptor)
+  (initialize-aliases)
+  (install-application descriptor install-dir
+    platform?: #t))
+
+
+;;;
 ;;;; Register
 ;;;
 
 
 (register-product 'kalima
-  build: build))
+  build: build
+  install: install))

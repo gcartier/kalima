@@ -6,60 +6,55 @@
   (stage beta)
   (root "src")
   (products (kalima (title "Kalima")
-                       (run kalima.run)
-                       (product kalima.product)
-                       (update kalima
-                               kalima.application
-                               kalima.product
-                               kalima.run
-                               kalima.ui)
-                       (build (kalima resources: "resources"))
-                       (dependencies jazz
-                                     jazz.action
-                                     jazz.application
-                                     jazz.clipboard
-                                     jazz.command
-                                     jazz.crash
-                                     jazz.descriptor
-                                     jazz.designer
-                                     jazz.document
-                                     jazz.domain
-                                     jazz.event
-                                     jazz.feedback
-                                     jazz.fonts
-                                     jazz.graphic
-                                     jazz.handler
-                                     jazz.history
-                                     jazz.io
-                                     jazz.jml
-                                     jazz.jrm
-                                     jazz.layout
-                                     jazz.locale
-                                     jazz.math
-                                     jazz.media
-                                     jazz.menu
-                                     jazz.picker
-                                     jazz.platform
-                                     jazz.preferences
-                                     jazz.print
-                                     jazz.profile
-                                     jazz.reference
-                                     jazz.resource
-                                     jazz.runtime
-                                     jazz.search
-                                     jazz.settings
-                                     jazz.syntax
-                                     jazz.text
-                                     jazz.time
-                                     jazz.tree
-                                     jazz.ui
-                                     jazz.undoer
-                                     jazz.version
-                                     jazz.view
-                                     jazz.window
-                                     jazz.workspace
-                                     contrib.irregex
-                                     debuggee
-                                     jazz.snapshot
-                                     jazz.template)))
+                    (run kalima.run)
+                    (product kalima.product)
+                    (update kalima
+                            kalima.application
+                            kalima.product
+                            kalima.run
+                            kalima.ui)
+                    (build (kalima bundle: "kalima" resources: "resources"))
+                    (dependencies jazz
+                                  jazz.action
+                                  jazz.application
+                                  jazz.clipboard
+                                  jazz.crash
+                                  jazz.document
+                                  jazz.event
+                                  jazz.feedback
+                                  jazz.fonts
+                                  jazz.graphic
+                                  jazz.handler
+                                  jazz.history
+                                  jazz.io
+                                  jazz.jml
+                                  jazz.jrm
+                                  jazz.layout
+                                  jazz.locale
+                                  jazz.math
+                                  jazz.media
+                                  jazz.menu
+                                  jazz.platform
+                                  jazz.preferences
+                                  jazz.print
+                                  jazz.product
+                                  jazz.profile
+                                  jazz.reference
+                                  jazz.resource
+                                  jazz.runtime
+                                  jazz.settings
+                                  jazz.syntax
+                                  jazz.text
+                                  jazz.time
+                                  jazz.tree
+                                  jazz.ui
+                                  jazz.undoer
+                                  jazz.version
+                                  jazz.view
+                                  jazz.window
+                                  jazz.workspace
+                                  contrib.irregex
+                                  jazz.debuggee
+                                  jazz.snapshot
+                                  jazz.template)))
   (project ".project"))

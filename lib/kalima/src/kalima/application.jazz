@@ -21,7 +21,6 @@
         (jazz.reference)
         (jazz.resource)
         (jazz.settings)
-        (jazz.text)
         (jazz.text.preferences)
         (jazz.ui)
         (jazz.ui.dialog)
