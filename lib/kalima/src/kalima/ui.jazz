@@ -166,7 +166,7 @@
   (method (focus-entries)
     (let ((tree (locate 'entries)))
       (acquire-focus~ tree)
-      (auto-select-first~ tree)))
+      (select-first-row~ tree)))
   
   
   ;;;
@@ -876,7 +876,7 @@
   (method override (focus-default)
     (let ((tree (locate 'entries)))
       (acquire-focus~ tree)
-      (auto-select-first~ tree)))
+      (select-first-row~ tree)))
   
   
   ;;;
