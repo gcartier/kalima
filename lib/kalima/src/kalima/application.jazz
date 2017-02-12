@@ -33,6 +33,13 @@
 
 
 ;; TODO
+;; - super intuitive for revision
+;; - rethink themes interface whatever it is
+;;   especially all those icons in the revision
+;;   - maybe it becomes done / marked / remaining
+;;     and we can do stuff with the marked entries
+;; - augment keyboard with spanish diacritic
+;; - fix mac copy/paste with diacritic
 ;; - fix resize when trees are scrolled
 ;; - add filtering to all toplevel views
 ;; - add, remove, reorder, group, ... themes
@@ -151,20 +158,17 @@
   
   
   (method (on-test evt)
-    (define (present title table)
-      (pp (cons title (cons (table-length table) (if (get-shift?~ evt) (sort nu<? (table-keys table)) '())))))
-    
-    (present 'ENVIRONMENT (get-environment))
-    (newline)
-    (present 'CATALOG (get-catalog))
     @w
-    (call-with-output-file (path-settings {File Home "Devel" "env-loaded"})
-      (lambda (output)
-        (pretty-print (sort nu<? (table-keys (get-environment))) output)))
+    (merge-dictionaries {File Home ".kalima" "dictionaries" "spanish.dic"}
+                        {File Home ".kalima" "dictionaries" "arabic.dic"}
+                        {File Home ".kalima" "dictionaries" "unified.dic"})
     @w
-    (debug 'done)
+    (remove-provenance)
     @w
-    (explore-views~ (current-view-debugger)))
+    (show-notes)
+    @w
+    (show-duplicates)
+    (explore-views~ (jazz.debuggee.view:current-view-debugger)))
   
   
   (method (on-insert evt)

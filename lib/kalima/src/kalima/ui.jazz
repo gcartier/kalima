@@ -74,15 +74,18 @@
     (let ((center (locate 'center))
           (entry (locate 'entry))
           (primary (locate 'primary))
-          (secondary (locate 'secondary)))
+          (secondary (locate 'secondary))
+          (tertiary (locate 'tertiary)))
       (let ((font (new Font font-name: 'vera-sans @windows "Times New Roman" point-size: (or point-size (get-kalima-point-size)))))
         (let ((height (font-height~ font)))
           (let ((spacer (fxround (/ height 5))))
-            (set-height~ entry (+ height spacer height))
+            (set-height~ entry (+ height spacer height spacer height))
             (set-height~ primary height)
             (set-font~ primary font)
             (set-height~ secondary height)
-            (set-font~ secondary font))))
+            (set-font~ secondary font)
+            (set-height~ tertiary height)
+            (set-font~ tertiary font))))
       (layout-view~ entry)
       (layout-view~ center))))
 
@@ -140,9 +143,10 @@
                 (<Tree-Node-Column>                      title: "Word" display-images?: #f toplevel-controls?: #f width: 419))))
           (<Layout-View>                                 location: second layout-type: border
             (<Layout-View>              name: center     location: center layout-type: center
-              (<Layout-View>            name: entry      layout-type: border size: {Dimension 4000 110}
+              (<Layout-View>            name: entry      layout-type: border size: {Dimension 4000 160}
                 (<Label-View>           name: primary    location: north size: {Dimension 4000 50} justification: center font: {Font Kalima})
-                (<Label-View>           name: secondary  location: south size: {Dimension 4000 50} justification: center font: {Font Kalima})))
+                (<Label-View>           name: secondary  location: center size: {Dimension 4000 50} justification: center font: {Font Kalima})
+                (<Label-View>           name: tertiary   location: south size: {Dimension 4000 50} justification: center font: {Font Kalima})))
             (<Layout-View>                               size: {Dimension 400 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
               (<Label-View>             name: note)))))))
   
@@ -177,13 +181,13 @@
   (method (setup)
     (define (setup-theme)
       (let ((combo (locate 'theme)))
-        (set-choices~ combo `((#f "All") ,@(map (lambda (theme) (list theme (get-subject~ theme))) (get-sorted-themes~ dictionary))))
+        (set-choices~ combo `((#f "All") ,@(map (lambda (theme) (list theme (get-subject~ theme))) (sort-themes~ dictionary))))
         (set-value~ combo #f)))
     
     (define (setup-language)
       (set! language 'primary)
       (let ((combo (locate 'language)))
-        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary))))
+        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (tertiary ,(get-tertiary~ dictionary))))
         (set-value~ combo 'primary)))
     
     (set! dictionary (get-current-dictionary))
@@ -203,7 +207,8 @@
     (let ((tree (locate 'entries))
           (getter (case language
                     ((primary) get-primary~)
-                    ((secondary) get-secondary~))))
+                    ((secondary) get-secondary~)
+                    ((tertiary) get-tertiary~))))
       (remove-every-row~ tree)
       (with-update-locked~ tree
         (lambda ()
@@ -256,7 +261,7 @@
     (set! theme (get-value~ (get-sender~ evt)))
     (setup-entries)
     (setup-words)
-    (display "" "")
+    (display "" "" "")
     (display-note "" #f)
     (focus-entries))
   
@@ -264,7 +269,7 @@
   (method (on-language evt)
     (set! language (get-value~ (get-sender~ evt)))
     (setup-words)
-    (display "" "")
+    (display "" "" "")
     (display-note "" #f)
     (focus-entries))
   
@@ -288,19 +293,23 @@
   (method (update)
     (let ((primary (get-primary~ entry))
           (secondary (get-secondary~ entry))
+          (tertiary (get-tertiary~ entry))
           (note (get-note~ entry))
           (themes (present-entry-themes~ dictionary entry)))
-      (display primary secondary)
+      (display primary secondary tertiary)
       (display-note note themes)))
   
   
-  (method (display primary secondary)
+  (method (display primary secondary tertiary)
     (let ((label (locate 'primary)))
       (set-color~ label {Color Black})
       (set-title~ label primary))
     (let ((label (locate 'secondary)))
-      (set-color~ label {Color Dark-Green})
-      (set-title~ label secondary)))
+      (set-color~ label {Color red: .131 green: .131 blue: .619})
+      (set-title~ label secondary))
+    (let ((label (locate 'tertiary)))
+      (set-color~ label {Color red: .103 green: .502 blue: .151})
+      (set-title~ label tertiary)))
   
   
   (method (display-note text themes)
@@ -360,10 +369,6 @@
   (form
     (<install>                                           layout-type: border
       (<Layout-View>                    name: toolbar    size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
-        (<Border-View>                                   size: {Dimension 60 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
-          (<Border-View>                                 border-color: {Color Entry-Border}
-            (<Combo-Box>                name: select     content-change-handler: {Event-Handler :document on-select})))
-        (<Separator-View>                                size: {Dimension 4 0})
         (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
           (<Border-View>                                 border-color: {Color Entry-Border}
             (<Combo-Box>                name: ask        content-change-handler: {Event-Handler :document on-ask})))
@@ -392,7 +397,8 @@
             (<Layout-View>              name: center     location: center layout-type: center
               (<Layout-View>            name: entry      layout-type: border size: {Dimension 4000 110}
                 (<Label-View>           name: primary    location: north size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})
-                (<Label-View>           name: secondary  location: south size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})))
+                (<Label-View>           name: secondary  location: south size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})
+                (<Label-View>           name: tertiary   location: south size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})))
             (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 4 0}
               (<Layout-View>                             layout-type: border
                 (<Label-View>           name: note       size: {Dimension 400 20} location: west)
@@ -419,46 +425,42 @@
   
   
   (method (setup)
-    (define (setup-select)
-      (let ((combo (locate 'select)))
-        (set-choices~ combo '((none {Locales english: "None" french: "Aucun"}) (all {Locales english: "All" french: "Tous"})))
-        (set-value~ combo 'none)))
-    
     (define (setup-ask)
       (let ((combo (locate 'ask))
             (random {Locales english: "Random" french: "Aléatoire"})
             (both {Locales english: "Both" french: "Les deux"}))
-        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (:random ,random) (:both ,both)))
+        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (tertiary ,(get-tertiary~ dictionary)) (:random ,random) (:both ,both)))
         (set-value~ combo 'primary)))
     
     (set! dictionary (get-current-dictionary))
     (set! ask 'primary)
-    (setup-select)
     (setup-ask)
     (setup-subjects)
     (subjects-update))
   
   
-  (method (setup-subjects (selected: selected '()))
+  (method (setup-subjects)
     (define (collect-subjects)
       (let ((queue (new-queue)))
         (for-each (lambda (theme)
                     (let ((subject (get-subject~ theme)))
                       (enqueue queue (cons subject theme))))
-                  (get-sorted-themes~ dictionary))
+                  (sort-themes~ dictionary))
         (queue-list queue)))
     
     (let ((tree (locate 'subjects)))
       (remove-every-row~ tree)
       (with-update-locked~ tree
         (lambda ()
+          (define (check-box title checked?)
+            (let ((handler (new Event-Handler execute: (lambda (evt) (subjects-update)))))
+              (new Check-Box title: title checked?: checked? content-change-handler: handler)))
+          
+          (add-row~ tree children: (list (check-box "All" #t)) user-data: #f)
           (for-each (lambda (info)
                       (bind (subject . theme) info
-                        (let ((handler (new Event-Handler execute: (lambda (evt) (subjects-update)))))
-                          (let ((title (if (starts-with? subject "<") (format "{a} ({a})" subject (length (get-entries~ theme))) subject))
-                                (checked? (member? subject selected)))
-                            (let ((node (new Check-Box title: title checked?: checked? content-change-handler: handler)))
-                              (add-row~ tree children: (list node) user-data: theme))))))
+                        (let ((title (if (starts-with? subject "<") (format "{a} ({a})" subject (length (get-entries~ theme))) subject)))
+                          (add-row~ tree children: (list (check-box title #f)) user-data: theme))))
                     (collect-subjects))))))
   
   
@@ -474,7 +476,9 @@
                   (for-each (lambda (entry)
                               (unless (memq? entry (queue-list entries))
                                 (enqueue entries entry)))
-                            (get-entries~ theme)))))))
+                            (if theme
+                                (get-entries~ theme)
+                              (collect-entries~ dictionary))))))))
         (queue-list entries)))
     
     (setup-entries (collect-entries)))
@@ -536,23 +540,6 @@
   ;;;
   ;;;; Events
   ;;;
-  
-  
-  (method (on-select evt)
-    (let ((checked? (case (get-value~ (get-sender~ evt))
-                      ((none) #f)
-                      ((all) #t)))
-          (tree (locate 'subjects)))
-      (for-each-visible-row~ tree
-        (lambda (row line)
-          (let ((checkbox (first-child~ row)))
-            (if checked?
-                (let ((subject (get-subject~ (get-user-data~ row))))
-                  (let ((special? (or (starts-with? subject "~")
-                                      (starts-with? subject "<"))))
-                    (set-checked?~ checkbox (not special?))))
-              (set-checked?~ checkbox #f))))))
-    (subjects-update))
   
   
   (method (on-ask evt)
@@ -692,7 +679,7 @@
         (set! entry #f)
       (set! stage 'question)
       (set! language (case ask
-                       ((:random) (random-element '(primary secondary)))
+                       ((:random) (random-element '(primary secondary tertiary)))
                        ((:both) 'secondary)
                        (else ask)))
       (set! entry new-entry))
@@ -754,18 +741,20 @@
   (method (update)
     (if (not entry)
         (begin
-          (display "" "")
+          (display "" "" "")
           (display-note "" #f))
       (let ((primary (get-primary~ entry))
             (secondary (get-secondary~ entry))
+            (tertiary (get-tertiary~ entry))
             (note (get-note~ entry))
             (themes (present-entry-themes~ dictionary entry)))
         (if (or (eq? ask :both)
                 (eq? stage 'answer))
-            (display primary secondary)
+            (display primary secondary tertiary)
           (case language
-            ((primary) (display primary ""))
-            ((secondary) (display "" secondary))))
+            ((primary) (display primary "" ""))
+            ((secondary) (display "" secondary ""))
+            ((tertiary) (display "" tertiary ""))))
         (display-note note themes)))
     (statistics))
   
@@ -780,13 +769,16 @@
          ((secondary) 'primary)))))
   
   
-  (method (display primary secondary)
+  (method (display primary secondary tertiary)
     (let ((label (locate 'primary)))
       (set-color~ label {Color Black})
       (set-title~ label primary))
     (let ((label (locate 'secondary)))
-      (set-color~ label {Color Dark-Green})
-      (set-title~ label secondary)))
+      (set-color~ label {Color red: .131 green: .131 blue: .619})
+      (set-title~ label secondary))
+    (let ((label (locate 'tertiary)))
+      (set-color~ label {Color red: .103 green: .502 blue: .151})
+      (set-title~ label tertiary)))
   
   
   (method (display-note text themes)
@@ -862,10 +854,11 @@
                   (<Tree-View>           name: entries   filled-column: note portfolio: :images multiple-selection?: #t selection-handler: {Event-Handler :form on-selection-change}
                     (<Tree-Node-Column>  name: primary   title: "" display-images?: #f toplevel-controls?: #f width: 175)
                     (<Tree-Label-Column> name: secondary title: "" width: 175)
+                    (<Tree-Label-Column> name: tertiary  title: "" width: 225)
                     (<Tree-Label-Column> name: note      title: "Note")
-                    (<Tree-Label-Column> name: themes    title: "Themes" width: 200))))))
+                    (<Tree-Label-Column> name: themes    title: "Themes" width: 150))))))
           (<Layout-View>                                 location: second layout-type: center
-            (<Kalima-Entry-View>         name: entry     size: {Dimension 787 80} location: center))))))
+            (<Kalima-Entry-View>         name: entry     size: {Dimension 787 110} location: center))))))
   
   
   (method override (finish rest)
@@ -899,17 +892,21 @@
           (for-each (lambda (entry)
                       (let ((primary (get-primary~ entry))
                             (secondary (get-secondary~ entry))
+                            (tertiary (get-tertiary~ entry))
                             (note (get-note~ entry))
                             (themes (or (present-entry-themes~ dictionary entry) "")))
-                        (add-row~ tree children: (list (new Tree-Node title: primary) (new Tree-Label title: secondary) (new Tree-Label title: note) (new Tree-Label title: themes)) user-data: entry)))
+                        (add-row~ tree children: (list (new Tree-Node title: primary) (new Tree-Label title: secondary) (new Tree-Label title: tertiary) (new Tree-Label title: note) (new Tree-Label title: themes)) user-data: entry)))
                     (di-sort-ascending entries key: get-primary~))))
       (let ((primary (get-primary~ dictionary))
-            (secondary (get-secondary~ dictionary)))
+            (secondary (get-secondary~ dictionary))
+            (tertiary (get-tertiary~ dictionary)))
         (set-title~ (locate 'primary) primary)
         (set-title~ (locate 'secondary) secondary)
+        (set-title~ (locate 'tertiary) tertiary)
         (let ((entry (locate 'entry)))
           (set-title~ (locate~ entry 'primary-label) (format "{a}:" primary))
-          (set-title~ (locate~ entry 'secondary-label) (format "{a}:" secondary))))))
+          (set-title~ (locate~ entry 'secondary-label) (format "{a}:" secondary))
+          (set-title~ (locate~ entry 'tertiary-label) (format "{a}:" tertiary))))))
   
   
   ;;;
@@ -922,6 +919,7 @@
       (locate 'entries)
       (locate '(entry primary))
       (locate '(entry secondary))
+      (locate '(entry tertiary))
       (locate '(entry note))))
   
   
@@ -942,7 +940,7 @@
   
   (method (on-add evt)
     (let ((tree (locate 'entries))
-          (entry (new Kalima-Entry "" "" "")))
+          (entry (new Kalima-Entry "" "" "" "")))
       (add-entry~ dictionary entry)
       (setup-entries)
       (select-user-data-row~ tree entry)
@@ -1022,18 +1020,23 @@
   
   (form
     (<install>
-      (<Label-View>                   name: primary-label             position: {Point 0 2} size: {Dimension 40 16} font: {Font Label})
-      (<Border-View>                                                  position: {Point 46 0} size: {Dimension 300 19} border-type: edge style: entry
+      (<Label-View>                   name: primary-label             position: {Point 0 2} size: {Dimension 50 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 50 0} size: {Dimension 300 19} border-type: edge style: entry
         (<Scroller-View>                                              hscroll?: #f vscroll?: #f
           (<!>                        name: content                   layout-type: fill
             (<Kalima-Entry-Text-View> name: primary))))
-      (<Label-View>                   name: secondary-label           position: {Point 0 32} size: {Dimension 40 16} font: {Font Label})
-      (<Border-View>                                                  position: {Point 46 30} size: {Dimension 300 19} border-type: edge style: entry
+      (<Label-View>                   name: secondary-label           position: {Point 0 32} size: {Dimension 50 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 50 30} size: {Dimension 300 19} border-type: edge style: entry
         (<Scroller-View>                                              hscroll?: #f vscroll?: #f
           (<!>                        name: content                   layout-type: fill
             (<Kalima-Entry-Text-View> name: secondary))))
-      (<Label-View>                                   title: "Note:"  position: {Point 0 63} size: {Dimension 40 16} font: {Font Label})
-      (<Border-View>                                                  position: {Point 46 60} size: {Dimension 300 19} border-type: edge style: entry
+      (<Label-View>                   name: tertiary-label            position: {Point 0 62} size: {Dimension 50 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 50 60} size: {Dimension 300 19} border-type: edge style: entry
+        (<Scroller-View>                                              hscroll?: #f vscroll?: #f
+          (<!>                        name: content                   layout-type: fill
+            (<Kalima-Entry-Text-View> name: tertiary))))
+      (<Label-View>                                   title: "Note:"  position: {Point 0 92} size: {Dimension 50 16} font: {Font Label})
+      (<Border-View>                                                  position: {Point 50 90} size: {Dimension 300 19} border-type: edge style: entry
         (<Scroller-View>                                              hscroll?: #f vscroll?: #f
           (<!>                        name: content                   layout-type: fill
             (<Kalima-Entry-Text-View> name: note))))
@@ -1070,19 +1073,21 @@
     
     (define (setup-theme name theme)
       (let ((combo (locate name)))
-        (set-choices~ combo (cons (list #f "<None>") (map (lambda (theme) (list theme (get-subject~ theme))) (get-sorted-themes~ dictionary))))
+        (set-choices~ combo (cons (list #f "<None>") (map (lambda (theme) (list theme (get-subject~ theme))) (sort-themes~ dictionary))))
         (set-value~ combo theme)))
     
     (set! entries~self entries)
     (let ((entry (and (= 1 (length entries)) (car entries))))
       (let ((primary (unique (map get-primary~ entries)))
             (secondary (unique (map get-secondary~ entries)))
+            (tertiary (unique (map get-tertiary~ entries)))
             (note (unique (map get-note~ entries)))
             (themes-list (map (lambda (entry)
                                 (collect-themes~ dictionary entry))
                               entries)))
         (set-string-content~ (locate 'primary) (or primary ""))
         (set-string-content~ (locate 'secondary) (or secondary ""))
+        (set-string-content~ (locate 'tertiary) (or tertiary ""))
         (set-string-content~ (locate 'note) (or note ""))
         (setup-theme 'theme1 (unique-theme themes-list 1))
         (setup-theme 'theme2 (unique-theme themes-list 2))

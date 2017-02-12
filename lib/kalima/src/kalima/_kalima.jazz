@@ -33,14 +33,15 @@
       (define (read-dictionary)
         (let ((properties (read port)))
           (let ((primary (getf properties primary:))
-                (secondary (getf properties secondary:)))
-            (new Kalima-Dictionary file primary secondary))))
+                (secondary (getf properties secondary:))
+                (tertiary (getf properties tertiary:)))
+            (new Kalima-Dictionary file primary secondary tertiary))))
       
       (define (read-entries dictionary)
         (let ((entries (read port)))
           (for-each (lambda (entry)
-                      (bind (primary secondary note) entry
-                        (add-entry~ dictionary (new Kalima-Entry primary secondary note))))
+                      (bind (primary secondary tertiary note) entry
+                        (add-entry~ dictionary (new Kalima-Entry primary secondary tertiary note))))
                     entries)))
       
       (define (read-themes dictionary)
@@ -63,9 +64,10 @@
     (lambda (port)
       (define (print-dictionary)
         (let ((primary (get-primary~ dictionary))
-              (secondary (get-secondary~ dictionary)))
+              (secondary (get-secondary~ dictionary))
+              (tertiary (get-tertiary~ dictionary)))
           (print-header secondary)
-          (format port "(primary: \"{a}\" secondary: \"{a}\"){%}{%}{%}" primary secondary)
+          (format port "(primary: \"{a}\" secondary: \"{a}\" tertiary: \"{a}\"){%}{%}{%}" primary secondary tertiary)
           (print-entries (collect-entries~ dictionary))
           (print-themes (get-themes~ dictionary))))
       
@@ -79,8 +81,9 @@
       (define (print-entry entry last?)
         (let ((primary (get-primary~ entry))
               (secondary (get-secondary~ entry))
+              (tertiary (get-tertiary~ entry))
               (note (or (get-note~ entry) "")))
-          (format port "(\"{a}\" \"{a}\" \"{a}\")" primary secondary note))
+          (format port "(\"{a}\" \"{a}\" \"{a}\" \"{a}\")" primary secondary tertiary note))
         (unless last?
           (format port "{%} ")))
       
@@ -91,14 +94,17 @@
                 (print-theme theme (null? remain)))))
       
       (define (print-theme theme last?)
-        (let ((subject (get-subject~ theme)))
+        (let ((subject (get-subject~ theme))
+              (entries (get-entries~ theme)))
           (print-header subject)
-          (format port "({s}{%}" subject)
-          (loop (for entry in (get-entries~ theme) remainder remain)
-                (let ((reference (get-primary~ entry)))
-                  (format port " \"{a}\"" reference)
-                  (unless (null? remain)
-                    (format port "{%}"))))
+          (format port "({s}" subject)
+          (when (not-null? entries)
+            (format port "{%}")
+            (loop (for entry in entries remainder remain)
+                  (let ((reference (get-primary~ entry)))
+                    (format port " \"{a}\"" reference)
+                    (unless (null? remain)
+                      (format port "{%}")))))
           (format port "){%}")
           (unless last?
             (format port "{%}{%}"))))
@@ -109,6 +115,118 @@
         (format port ";;;{%}{%}{%}"))
       
       (print-dictionary))))
+
+
+(definition public (merge-dictionaries sec-file ter-file uni-file)
+  (let ((sec-dict (load-dictionary sec-file))
+        (ter-dict (load-dictionary ter-file)))
+    (let ((uni-dict (new Kalima-Dictionary uni-file (get-primary~ sec-dict) (get-secondary~ sec-dict) (get-secondary~ ter-dict))))
+      ;; entries
+      (let ((sec (table-keys (get-entries~ sec-dict)))
+            (ter (table-keys (get-entries~ ter-dict))))
+        (let ((both (intersection test: equal? sec ter))
+              (only-sec (difference sec ter test: equal?))
+              (only-ter (difference ter sec test: equal?)))
+          ;; both
+          (for-each (lambda (key)
+                      (let ((sec-entry (find-entry~ sec-dict key))
+                            (ter-entry (find-entry~ ter-dict key)))
+                        (add-entry~ uni-dict (new Kalima-Entry
+                                               (get-primary~ sec-entry)
+                                               (get-secondary~ sec-entry)
+                                               (get-secondary~ ter-entry)
+                                               (let ((sec-note (get-note~ sec-entry))
+                                                     (ter-note (get-note~ ter-entry)))
+                                                 (if (not (empty-string? sec-note))
+                                                     sec-note
+                                                   ter-note))))))
+                    both)
+          ;; only sec
+          (for-each (lambda (key)
+                      (let ((entry (find-entry~ sec-dict key)))
+                        (add-entry~ uni-dict (new Kalima-Entry
+                                               (get-primary~ entry)
+                                               (get-secondary~ entry)
+                                               ""
+                                               (get-note~ entry)))))
+                    only-sec)
+          ;; only ter
+          (for-each (lambda (key)
+                      (let ((entry (find-entry~ ter-dict key)))
+                        (add-entry~ uni-dict (new Kalima-Entry
+                                               (get-primary~ entry)
+                                               ""
+                                               (get-secondary~ entry)
+                                               (get-note~ entry)))))
+                    only-ter)))
+      ;; themes
+      (let ((sec (map get-subject~ (get-themes~ sec-dict)))
+            (ter (map get-subject~ (get-themes~ ter-dict))))
+        (let ((only-sec (difference sec ter test: equal?))
+              (only-ter (difference ter sec test: equal?))
+              (both (intersection test: equal? sec ter)))
+          ;; only sec
+          (for-each (lambda (subject)
+                      (let ((theme (find-theme~ sec-dict subject)))
+                        (add-theme~ uni-dict (new Kalima-Theme uni-dict subject (map get-primary~ (get-entries~ theme))))))
+                    only-sec)
+          ;; only ter
+          (for-each (lambda (subject)
+                      (let ((theme (find-theme~ ter-dict subject)))
+                        (add-theme~ uni-dict (new Kalima-Theme uni-dict subject (map get-primary~ (get-entries~ theme))))))
+                    only-ter)
+          ;; both
+          (for-each (lambda (subject)
+                      (let ((sec-theme (find-theme~ sec-dict subject))
+                            (ter-theme (find-theme~ ter-dict subject)))
+                        (add-theme~ uni-dict (new Kalima-Theme uni-dict subject (union test: equal?
+                                                                                  (map get-primary~ (get-entries~ sec-theme))
+                                                                                  (map get-primary~ (get-entries~ ter-theme)))))))
+                    both)))
+      (save~ uni-dict)
+      uni-dict)))
+
+
+(definition public (show-notes)
+  (let ((dict (get-current-dictionary)))
+    (iterate-table (get-entries~ dict)
+      (lambda (key entries)
+        (let ((entry (car entries)))
+          (let ((note (get-note~ entry)))
+            (when (not (empty-string? note))
+              (debug key note))))))))
+
+
+(definition public (show-duplicates)
+  (let ((dict (get-current-dictionary)))
+    (iterate-table (get-entries~ dict)
+      (lambda (key entries)
+        (when (> (length entries) 1)
+          (debug key entries))))))
+
+
+(definition public (remove-provenance)
+  (let ((dict (get-current-dictionary))
+        (notes-removed 0)
+        (themes-removed 0))
+    ;; notes
+    (iterate-table (get-entries~ dict)
+      (lambda (key entries)
+        (for-each (lambda (entry)
+                    (when (not (empty-string? (get-note~ entry)))
+                      (set-note~ entry "")
+                      (increase! notes-removed)))
+                  entries)))
+    ;; themes
+    (for-each (lambda (theme)
+                (let ((subject (get-subject~ theme)))
+                  (when (or (starts-with? subject "Assimil")
+                            (starts-with? subject "Rosetta"))
+                    (remove-theme~ dict theme)
+                    (increase! themes-removed))))
+              (get-themes~ dict))
+    (debug 'removed notes-removed 'notes 'and themes-removed 'themes)
+    (save~ dict)))
 
 
 ;;;
@@ -133,21 +251,29 @@
   (slot file      getter generate)
   (slot primary   getter generate)
   (slot secondary getter generate)
+  (slot tertiary  getter generate)
   (slot entries   getter generate)
   (slot themes    getter generate)
   (slot listeners getter generate)
   (slot modified? accessors generate)
   
   
-  (method override (initialize file primary secondary)
+  (method override (initialize file primary secondary tertiary)
     (nextmethod)
     (set! file~self file)
     (set! primary~self primary)
     (set! secondary~self secondary)
+    (set! tertiary~self tertiary)
     (set! entries~self (make-table test: equal?))
     (set! themes~self '())
     (set! listeners~self '())
     (set! modified? #f))
+  
+  
+  (method override (print output readably)
+    (print-unreadable self output
+      (lambda (output)
+        (format output "{s} {s}{? {s}~}" primary secondary tertiary))))
   
   
   (method public (save)
@@ -168,7 +294,7 @@
         #f)))
   
   
-  (method public (get-entry key)
+  (method public (require-entry key)
     (or (find-entry key)
         (error "Unable to find entry: {a}" key)))
   
@@ -214,7 +340,7 @@
                 themes))
   
   
-  (method public (get-sorted-themes)
+  (method public (sort-themes)
     (sort (lambda (x y)
             (let ((cx (starts-with? x "<"))
                   (cy (starts-with? y "<")))
@@ -251,6 +377,8 @@
          (table-add entries content entry)))
       ((secondary)
        (set-secondary~ entry content))
+      ((tertiary)
+       (set-tertiary~ entry content))
       ((note)
        (set-note~ entry content)))
     (set! modified? #t)
@@ -305,7 +433,7 @@
   (method override (initialize dictionary subject references)
     (define (collect-entries)
       (map (lambda (reference)
-             (get-entry~ dictionary reference))
+             (require-entry~ dictionary reference))
            references))
     
     (nextmethod)
@@ -342,17 +470,19 @@
   
   (slot primary   accessors generate)
   (slot secondary accessors generate)
+  (slot tertiary  accessors generate)
   (slot note      accessors generate)
   
   
   (method override (print output readably)
     (print-unreadable self output
       (lambda (output)
-        (format output "{s} {s} {s}" primary secondary note))))
+        (format output "{s} {s} {s} {s}" primary secondary tertiary note))))
   
   
-  (method override (initialize primary secondary note)
+  (method override (initialize primary secondary tertiary note)
     (nextmethod)
     (set! primary~self primary)
     (set! secondary~self secondary)
+    (set! tertiary~self tertiary)
     (set! note~self note))))
