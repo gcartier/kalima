@@ -434,7 +434,7 @@
       (<Label-Item>      title: {Locales english: "Close Window" french: "Fermer la fenêtre"} action-handler: {Action application close})
       (<Label-Item>      title: {Locales english: "Close All Windows" french: "Fermer toutes les fenêtres"} action-handler: {Action application close-all})
       (<Separator-Item>)
-      (<Label-Item>      title: {Locales english: "Quit" french: "Quitter"} action-handler: {Action application exit}))))
+      (<Label-Item>      title: {Locales english: "Quit" french: "Quitter"} action-handler: {Action application quit}))))
 
 
 ;;;
