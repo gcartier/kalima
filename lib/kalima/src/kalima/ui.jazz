@@ -622,11 +622,11 @@
   
   (method (theme-selected? subject)
     (let ((theme (find-theme~ dictionary subject)))
-      (when theme
-        (let ((tree (locate 'subjects)))
-          (let ((row (user-data-row~ tree theme)))
-            (let ((checkbox (first-child~ row)))
-              (get-checked?~ checkbox)))))))
+      (and theme
+           (let ((tree (locate 'subjects)))
+             (let ((row (user-data-row~ tree theme)))
+               (let ((checkbox (first-child~ row)))
+                 (get-checked?~ checkbox)))))))
   
   
   (method (on-decrease evt)

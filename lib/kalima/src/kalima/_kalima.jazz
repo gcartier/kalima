@@ -226,8 +226,8 @@
   
   (method public (present-entry-themes entry)
     (let ((themes (collect-themes entry)))
-      (when (not-null? themes)
-        (join (map get-subject~ themes) ", "))))
+      (and (not-null? themes)
+           (join (map get-subject~ themes) ", "))))
   
   
   (method public (collect-subjects)
