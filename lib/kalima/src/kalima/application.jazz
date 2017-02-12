@@ -234,7 +234,7 @@
   
   (method (close-dictionary)
     (let ((dictionary (get-current-dictionary)))
-      (when dictionary
+      (when (and dictionary (get-modified?~ dictionary))
         (save~ dictionary)
         (set-current-dictionary #f)))
     (close-all)
