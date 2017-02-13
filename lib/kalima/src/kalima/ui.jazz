@@ -214,7 +214,8 @@
         (lambda ()
           (for-each (lambda (entry)
                       (let ((title (getter entry)))
-                        (add-row~ tree children: (list (new Tree-Node title: title)) user-data: entry)))
+                        (unless (empty-string? title)
+                          (add-row~ tree children: (list (new Tree-Node title: title)) user-data: entry))))
                     (di-sort-ascending entries key: getter))))))
   
   
@@ -428,8 +429,8 @@
     (define (setup-ask)
       (let ((combo (locate 'ask))
             (random {Locales english: "Random" french: "Aléatoire"})
-            (both {Locales english: "Both" french: "Les deux"}))
-        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (tertiary ,(get-tertiary~ dictionary)) (:random ,random) (:both ,both)))
+            (answer {Locales english: "Answer" french: "Réponse"}))
+        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (tertiary ,(get-tertiary~ dictionary)) (:random ,random) (:answer ,answer)))
         (set-value~ combo 'primary)))
     
     (set! dictionary (get-current-dictionary))
@@ -467,7 +468,12 @@
   (method (subjects-update)
     (define (collect-entries)
       (let ((tree (locate 'subjects))
-            (entries (new-queue)))
+            (entries (new-queue))
+            (getter (case ask
+                      ((primary) get-primary~)
+                      ((secondary) get-secondary~)
+                      ((tertiary) get-tertiary~)
+                      (else #f))))
         (for-each-visible-row~ tree
           (lambda (row line)
             (let ((checkbox (first-child~ row)))
@@ -475,7 +481,8 @@
                 (let ((theme (get-user-data~ row)))
                   (for-each (lambda (entry)
                               (unless (memq? entry (queue-list entries))
-                                (enqueue entries entry)))
+                                (when (or (not getter) (not (empty-string? (getter entry))))
+                                  (enqueue entries entry))))
                             (if theme
                                 (get-entries~ theme)
                               (collect-entries~ dictionary))))))))
@@ -544,6 +551,7 @@
   
   (method (on-ask evt)
     (set! ask (get-value~ (get-sender~ evt)))
+    (subjects-update)
     (ask-word))
   
   
@@ -637,7 +645,7 @@
   (method override (key-press evt)
     (case (get-key~ evt)
       ((#\space)
-       (if (eq? ask :both)
+       (if (eq? ask :answer)
            (review-answer)
          (case stage
            ((question)
@@ -647,7 +655,7 @@
   
   
   (method override (return-press evt)
-    (if (eq? ask :both)
+    (if (eq? ask :answer)
         (right-answer)
       (case stage
         ((question)
@@ -679,8 +687,16 @@
         (set! entry #f)
       (set! stage 'question)
       (set! language (case ask
-                       ((:random) (random-element '(primary secondary tertiary)))
-                       ((:both) 'secondary)
+                       ((:random) (random-element (let ((languages '()))
+                                                    (define (add language getter)
+                                                      (when (not (empty-string? (getter new-entry)))
+                                                        (set! languages (cons language languages))))
+                                                    
+                                                    (add 'primary get-primary~)
+                                                    (add 'secondary get-secondary~)
+                                                    (add 'tertiary get-tertiary~)
+                                                    languages)))
+                       ((:answer) 'secondary)
                        (else ask)))
       (set! entry new-entry))
     (update))
@@ -748,13 +764,13 @@
             (tertiary (get-tertiary~ entry))
             (note (get-note~ entry))
             (themes (present-entry-themes~ dictionary entry)))
-        (if (or (eq? ask :both)
+        (if (or (eq? ask :answer)
                 (eq? stage 'answer))
             (display primary secondary tertiary)
           (case language
             ((primary) (display primary "" ""))
             ((secondary) (display "" secondary ""))
-            ((tertiary) (display "" tertiary ""))))
+            ((tertiary) (display "" "" tertiary))))
         (display-note note themes)))
     (statistics))
   
