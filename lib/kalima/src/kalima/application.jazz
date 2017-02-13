@@ -38,7 +38,6 @@
 ;;   especially all those icons in the revision
 ;;   - maybe it becomes done / marked / remaining
 ;;     and we can do stuff with the marked entries
-;; - augment keyboard with spanish diacritic
 ;; - fix mac copy/paste with diacritic
 ;; - fix resize when trees are scrolled
 ;; - add filtering to all toplevel views
@@ -377,15 +376,23 @@
       (<Action-Item> name: edit     action-handler: {Event-Handler :application on-edit} shortcut: {Shortcut :control :alt #\E})
       (<Action-Item> name: keyboard action-handler: {Event-Handler :application on-keyboard} shortcut: {Shortcut :control :shift #\K})
       (<Action-Item> name: test     action-handler: {Event-Handler :application on-test} shortcut: {Shortcut :control #\T})
-      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "à"} shortcut: {Shortcut :control #\1})
-      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ì"} shortcut: {Shortcut :control #\2})
-      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ù"} shortcut: {Shortcut :control #\3})
-      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "é"} shortcut: {Shortcut :control #\4})
-      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "è"} shortcut: {Shortcut :control #\5})
-      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ê"} shortcut: {Shortcut :control #\6})
-      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "â"} shortcut: {Shortcut :control #\7})
-      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ô"} shortcut: {Shortcut :control #\8})
-      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ç"} shortcut: {Shortcut :control #\9}))))
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "á"} shortcut: {Shortcut :control #\1})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "à"} shortcut: {Shortcut :alt #\1})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "â"} shortcut: {Shortcut :control :alt #\1})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "é"} shortcut: {Shortcut :control #\2})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "è"} shortcut: {Shortcut :alt #\2})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ê"} shortcut: {Shortcut :control :alt #\2})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "í"} shortcut: {Shortcut :control #\3})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ì"} shortcut: {Shortcut :alt #\3})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "î"} shortcut: {Shortcut :control :alt #\3})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ó"} shortcut: {Shortcut :control #\4})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ò"} shortcut: {Shortcut :alt #\4})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ô"} shortcut: {Shortcut :control :alt #\4})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ú"} shortcut: {Shortcut :control #\5})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ù"} shortcut: {Shortcut :alt #\5})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "û"} shortcut: {Shortcut :control :alt #\5})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ç"} shortcut: {Shortcut :control #\6})
+      (<Action-Item>                action-handler: {Event-Handler :application on-insert text: "ñ"} shortcut: {Shortcut :control #\7}))))
 
 
 ;;;
