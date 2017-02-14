@@ -292,13 +292,17 @@
   
   
   (method (update)
-    (let ((primary (get-primary~ entry))
-          (secondary (get-secondary~ entry))
-          (tertiary (get-tertiary~ entry))
-          (note (get-note~ entry))
-          (themes (present-entry-themes~ dictionary entry)))
-      (display primary secondary tertiary)
-      (display-note note themes)))
+    (if (not entry)
+        (begin
+          (display "" "" "")
+          (display-note "" #f))
+      (let ((primary (get-primary~ entry))
+            (secondary (get-secondary~ entry))
+            (tertiary (get-tertiary~ entry))
+            (note (get-note~ entry))
+            (themes (present-entry-themes~ dictionary entry)))
+        (display primary secondary tertiary)
+        (display-note note themes))))
   
   
   (method (display primary secondary tertiary)
