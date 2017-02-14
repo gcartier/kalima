@@ -78,7 +78,7 @@
           (tertiary (locate 'tertiary)))
       (let ((font (new Font font-name: 'vera-sans @windows "Times New Roman" point-size: (or point-size (get-kalima-point-size)))))
         (let ((height (font-height~ font)))
-          (let ((spacer (fxround (/ height 5))))
+          (let ((spacer (fxround (/ (fl height) 5.))))
             (set-height~ entry (+ height spacer height spacer height))
             (set-height~ primary height)
             (set-font~ primary font)
