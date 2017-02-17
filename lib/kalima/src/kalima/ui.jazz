@@ -367,7 +367,7 @@
   (slot language   initialize #f)
   (slot restrict   initialize #f)
   (slot stage      initialize #f)
-  (slot right      initialize #f)
+  (slot done       initialize #f)
   (slot review     initialize #f)
   (slot undoer     initialize #f)
   
@@ -385,9 +385,7 @@
         (<Separator>                                     size: {Dimension 14 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Review" resource: {Image-Resource "Edit"} portfolio: :images action-handler: {Event-Handler :form on-review})
         (<Separator>                                     size: {Dimension 8 0})
-        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Reload Session" resource: {Image-Resource "Refresh"} portfolio: :images action-handler: {Event-Handler :form on-reload-session})
-        (<Separator>                                     location: tail size: {Dimension 20 0})
-        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Session" resource: {Image-Resource "Save"} portfolio: :images action-handler: {Event-Handler :form on-save-session})
+        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Restart session" resource: {Image-Resource "Refresh"} portfolio: :images action-handler: {Event-Handler :form on-restart})
         (<Separator>                                     location: tail size: {Dimension 20 0})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Decrease Text" resource: {Image-Resource "FindNext"} portfolio: :images action-handler: {Event-Handler :form on-decrease})
         (<Separator>                                     location: tail size: {Dimension 2 0})
@@ -472,7 +470,7 @@
             (let ((handler (new Event-Handler execute: (lambda (evt) (subjects-update)))))
               (new Check-Box title: title checked?: checked? content-change-handler: handler)))
           
-          (add-row~ tree children: (list (check-box "All" #t)) user-data: #f)
+          (add-row~ tree children: (list (check-box "All" #f)) user-data: #f)
           (for-each (lambda (info)
                       (bind (subject . theme) info
                         (let ((title (if (starts-with? subject "<") (format "{a} ({a})" subject (length (get-entries~ theme))) subject)))
@@ -515,7 +513,7 @@
     (reset~ undoer)
     (set! entries lst)
     (set! stage 'question)
-    (set! right '())
+    (set! done '())
     (set! review '())
     (ask-word)
     (delay-event
@@ -585,23 +583,8 @@
     (setup-entries review))
   
   
-  (method (on-reload-session evt)
+  (method (on-restart evt)
     (subjects-update))
-  
-  
-  (method (on-save-session evt)
-    (save-kalima-session #f))
-  
-  
-  (method (on-augment-session evt)
-    (save-kalima-session #t))
-  
-  
-  (method (save-kalima-session augment?)
-    (let ((review-selected? (theme-selected? "<Review>"))
-          (session-selected? (theme-selected? "<Session>")))
-      (save-theme "<Review>" review augment?: (and augment? (not review-selected?)) select?: #f)
-      (save-theme "<Session>" entries augment?: (and augment? (not session-selected?)))))
   
   
   (method (save-theme subject entries (augment?: augment? #f) (select?: select? #t))
@@ -722,8 +705,8 @@
     (when entry
       (register-undo)
       (set! entries (remove entry entries))
-      (unless (memq? entry right)
-        (set! right (cons entry right)))
+      (unless (memq? entry done)
+        (set! done (cons entry done)))
       (ask-word)
       (delay-event
         (lambda ()
@@ -745,13 +728,13 @@
   (method (register-undo)
     (register-undo~ undoer
       (let ((entries entries)
-            (right right)
+            (done done)
             (review review)
             (entry entry))
         (lambda ()
           (register-undo)
           (set! entries~self entries)
-          (set! right~self right)
+          (set! done~self done)
           (set! review~self review)
           (ask-entry entry)
           (delay-event
@@ -816,7 +799,7 @@
   
   (method (statistics)
     (let ((label (locate 'statistics)))
-      (set-title~ label (format "Right: {a}, review: {a}, remaining: {a}" (length right) (length review) (length entries))))))
+      (set-title~ label (format "Review: {a}, done: {a}, remaining: {a}" (length review) (length done) (length entries))))))
 
 
 ;;;
@@ -829,13 +812,11 @@
 
   (form
     (<install>
-      (<Action-Item> name: review          action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
-      (<Action-Item> name: reload-session  action-handler: {Event-Handler :focus-guest on-reload-session} shortcut: {Shortcut :alt #\L})
-      (<Action-Item> name: augment-session action-handler: {Event-Handler :focus-guest on-augment-session} shortcut: {Shortcut :alt #\S})
-      (<Action-Item> name: replace-session action-handler: {Event-Handler :focus-guest on-replace-session} shortcut: {Shortcut :alt :shift #\S})
-      (<Action-Item> name: increase        action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
-      (<Action-Item> name: decrease        action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
-      (<Action-Item> name: edit            action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
+      (<Action-Item> name: review   action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
+      (<Action-Item> name: restart  action-handler: {Event-Handler :focus-guest on-restart} shortcut: {Shortcut :alt #\L})
+      (<Action-Item> name: increase action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
+      (<Action-Item> name: decrease action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
+      (<Action-Item> name: edit     action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
 
 
 ;;;
