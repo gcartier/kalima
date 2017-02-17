@@ -91,255 +91,6 @@
 
 
 ;;;
-;;;; Browse
-;;;
-
-
-(class Kalima-Browse-View extends Kalima-View implements Dictionary-Listener
-  
-  
-  (method meta override (host-icon)
-    {Image-Resource "Doc"})
-  
-  (method meta override (host-title)
-    {Locales english: "Browse" french: "Consulter"})
-  
-  (method meta override (host-position)
-    {Point 834 25})
-  
-  (method meta override (host-size)
-    {Dimension 800 697})
-  
-  
-  (slot dictionary initialize #f)
-  (slot themes     initialize #f)
-  (slot entries    initialize #f)
-  (slot entry      initialize #f)
-  (slot theme      initialize #f)
-  (slot language   initialize #f)
-  
-  
-  (form
-    (<install>                                           layout-type: border
-      (<Layout-View>                    name: toolbar    size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
-        (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
-          (<Border-View>                                 border-color: {Color Entry-Border}
-            (<Combo-Box>                name: theme      content-change-handler: {Event-Handler :document on-theme})))
-        (<Separator-View>                                size: {Dimension 4 0})
-        (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
-          (<Border-View>                                 border-color: {Color Entry-Border}
-            (<Combo-Box>                name: language   content-change-handler: {Event-Handler :document on-language})))
-        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Decrease Text" resource: {Image-Resource "FindNext"} portfolio: :images action-handler: {Event-Handler :form on-decrease})
-        (<Separator>                                     location: tail size: {Dimension 2 0})
-        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Increase Text" resource: {Image-Resource "FindPrevious"} portfolio: :images action-handler: {Event-Handler :form on-increase})
-        (<Separator>                                     location: tail size: {Dimension 16 0})
-        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Edit" resource: {Image-Resource "Script"} portfolio: :images action-handler: {Event-Handler :form on-edit})
-        (<Separator>                                     location: tail size: {Dimension 2 0}))
-      (<Border-View>                                     location: center border-type: edge style: entry
-        (<Splitter-View>                                 background: {Color White} orientation: horz mode: absolute division: 175
-          (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
-            (<!>                        name: content    layout-type: fill
-              (<Tree-View>              name: entries    portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
-                (<Tree-Node-Column>                      title: "Word" display-images?: #f toplevel-controls?: #f width: 419))))
-          (<Layout-View>                                 location: second layout-type: border
-            (<Layout-View>              name: center     location: center layout-type: center
-              (<Layout-View>            name: entry      layout-type: border size: {Dimension 4000 160}
-                (<Label-View>           name: primary    location: north size: {Dimension 4000 50} justification: center font: {Font Kalima})
-                (<Label-View>           name: secondary  location: center size: {Dimension 4000 50} justification: center font: {Font Kalima})
-                (<Label-View>           name: tertiary   location: south size: {Dimension 4000 50} justification: center font: {Font Kalima})))
-            (<Layout-View>                               size: {Dimension 400 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
-              (<Label-View>             name: note)))))))
-  
-  
-  (method override (finish rest)
-    (nextmethod rest)
-    (size-update)
-    (setup)
-    (add-listener~ dictionary self))
-  
-  
-  (method override (destroy)
-    (remove-listener~ dictionary self)
-    (nextmethod))
-  
-  
-  (method override (focus-default)
-    (focus-entries))
-  
-  
-  (method (focus-entries)
-    (let ((tree (locate 'entries)))
-      (acquire-focus~ tree)
-      (select-first-row~ tree)))
-  
-  
-  ;;;
-  ;;;; Setup
-  ;;;
-  
-  
-  (method (setup)
-    (define (setup-theme)
-      (let ((combo (locate 'theme)))
-        (set-choices~ combo `((#f "All") ,@(map (lambda (theme) (list theme (get-subject~ theme))) (sort-themes~ dictionary))))
-        (set-value~ combo #f)))
-    
-    (define (setup-language)
-      (set! language 'primary)
-      (let ((combo (locate 'language)))
-        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (tertiary ,(get-tertiary~ dictionary))))
-        (set-value~ combo 'primary)))
-    
-    (set! dictionary (get-current-dictionary))
-    (setup-entries)
-    (setup-theme)
-    (setup-language)
-    (setup-words))
-  
-  
-  (method (setup-entries)
-    (set! entries (if theme
-                      (get-entries~ theme)
-                    (collect-entries~ dictionary))))
-  
-  
-  (method (setup-words)
-    (let ((tree (locate 'entries))
-          (getter (case language
-                    ((primary) get-primary~)
-                    ((secondary) get-secondary~)
-                    ((tertiary) get-tertiary~))))
-      (remove-every-row~ tree)
-      (with-update-locked~ tree
-        (lambda ()
-          (for-each (lambda (entry)
-                      (let ((title (getter entry)))
-                        (unless (empty-string? title)
-                          (add-row~ tree children: (list (new Tree-Node title: title)) user-data: entry))))
-                    (di-sort-ascending entries key: getter))))))
-  
-  
-  ;;;
-  ;;;; Keyboard
-  ;;;
-  
-  
-  (method override (get-tab-stops)
-    (list
-      (locate 'entries)))
-  
-  
-  ;;;
-  ;;;; Actions
-  ;;;
-  
-
-  (method override (guest-actions)
-    (cons (find-actions 'kalima-browse)
-          (nextmethod)))
-  
-  
-  ;;;
-  ;;;; Events
-  ;;;
-  
-  
-  (method (on-decrease evt)
-    (change-size previous-element))
-  
-  
-  (method (on-increase evt)
-    (change-size next-element))
-  
-  
-  (method (on-edit evt)
-    (if (not entry)
-        (bell)
-      (edit-entry entry 'primary)))
-  
-  
-  (method (on-theme evt)
-    (set! theme (get-value~ (get-sender~ evt)))
-    (setup-entries)
-    (setup-words)
-    (display "" "" "")
-    (display-note "" #f)
-    (focus-entries))
-  
-  
-  (method (on-language evt)
-    (set! language (get-value~ (get-sender~ evt)))
-    (setup-words)
-    (display "" "" "")
-    (display-note "" #f)
-    (focus-entries))
-  
-  
-  (method (on-selection-change evt)
-    (let ((tree (get-sender~ evt)))
-      (set! entry (get-single-selected-data~ tree))
-      (update)))
-  
-  
-  (method override (entry-change dictionary changed-entry)
-    (when (eq? changed-entry entry)
-      (update)))
-  
-  
-  ;;;
-  ;;;; Update
-  ;;;
-  
-  
-  (method (update)
-    (if (not entry)
-        (begin
-          (display "" "" "")
-          (display-note "" #f))
-      (let ((primary (get-primary~ entry))
-            (secondary (get-secondary~ entry))
-            (tertiary (get-tertiary~ entry))
-            (note (get-note~ entry))
-            (themes (present-entry-themes~ dictionary entry)))
-        (display primary secondary tertiary)
-        (display-note note themes))))
-  
-  
-  (method (display primary secondary tertiary)
-    (let ((label (locate 'primary)))
-      (set-color~ label {Color Black})
-      (set-title~ label primary))
-    (let ((label (locate 'secondary)))
-      (set-color~ label {Color red: .131 green: .131 blue: .619})
-      (set-title~ label secondary))
-    (let ((label (locate 'tertiary)))
-      (set-color~ label {Color red: .103 green: .502 blue: .151})
-      (set-title~ label tertiary)))
-  
-  
-  (method (display-note text themes)
-    (let ((label (locate 'note)))
-      (if (empty-string? text)
-          (set-title~ label (format "{?{a}~}" themes))
-        (set-title~ label (format "{a}{? : {a}~}" text themes))))))
-
-
-;;;
-;;;; Browse-Actions
-;;;
-
-
-(class Kalima-Browse-Actions extends Actions
-
-
-  (form
-    (<install>
-      (<Action-Item> name: increase action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
-      (<Action-Item> name: decrease action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
-      (<Action-Item> name: edit     action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
-
-
-;;;
 ;;;; Study
 ;;;
 
@@ -814,6 +565,255 @@
     (<install>
       (<Action-Item> name: review   action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
       (<Action-Item> name: restart  action-handler: {Event-Handler :focus-guest on-restart} shortcut: {Shortcut :alt #\L})
+      (<Action-Item> name: increase action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
+      (<Action-Item> name: decrease action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
+      (<Action-Item> name: edit     action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
+
+
+;;;
+;;;; Browse
+;;;
+
+
+(class Kalima-Browse-View extends Kalima-View implements Dictionary-Listener
+  
+  
+  (method meta override (host-icon)
+    {Image-Resource "Doc"})
+  
+  (method meta override (host-title)
+    {Locales english: "Browse" french: "Consulter"})
+  
+  (method meta override (host-position)
+    {Point 834 25})
+  
+  (method meta override (host-size)
+    {Dimension 800 697})
+  
+  
+  (slot dictionary initialize #f)
+  (slot themes     initialize #f)
+  (slot entries    initialize #f)
+  (slot entry      initialize #f)
+  (slot theme      initialize #f)
+  (slot language   initialize #f)
+  
+  
+  (form
+    (<install>                                           layout-type: border
+      (<Layout-View>                    name: toolbar    size: {Dimension 300 33} location: north layout-type: flow layout-insets: {Rect 0 6 0 0}
+        (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
+          (<Border-View>                                 border-color: {Color Entry-Border}
+            (<Combo-Box>                name: theme      content-change-handler: {Event-Handler :document on-theme})))
+        (<Separator-View>                                size: {Dimension 4 0})
+        (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
+          (<Border-View>                                 border-color: {Color Entry-Border}
+            (<Combo-Box>                name: language   content-change-handler: {Event-Handler :document on-language})))
+        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Decrease Text" resource: {Image-Resource "FindNext"} portfolio: :images action-handler: {Event-Handler :form on-decrease})
+        (<Separator>                                     location: tail size: {Dimension 2 0})
+        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Increase Text" resource: {Image-Resource "FindPrevious"} portfolio: :images action-handler: {Event-Handler :form on-increase})
+        (<Separator>                                     location: tail size: {Dimension 16 0})
+        (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Edit" resource: {Image-Resource "Script"} portfolio: :images action-handler: {Event-Handler :form on-edit})
+        (<Separator>                                     location: tail size: {Dimension 2 0}))
+      (<Border-View>                                     location: center border-type: edge style: entry
+        (<Splitter-View>                                 background: {Color White} orientation: horz mode: absolute division: 175
+          (<Scroller-View>                               location: first style: document hscroll?: #t vscroll?: #t
+            (<!>                        name: content    layout-type: fill
+              (<Tree-View>              name: entries    portfolio: :images selection-handler: {Event-Handler :form on-selection-change}
+                (<Tree-Node-Column>                      title: "Word" display-images?: #f toplevel-controls?: #f width: 419))))
+          (<Layout-View>                                 location: second layout-type: border
+            (<Layout-View>              name: center     location: center layout-type: center
+              (<Layout-View>            name: entry      layout-type: border size: {Dimension 4000 160}
+                (<Label-View>           name: primary    location: north size: {Dimension 4000 50} justification: center font: {Font Kalima})
+                (<Label-View>           name: secondary  location: center size: {Dimension 4000 50} justification: center font: {Font Kalima})
+                (<Label-View>           name: tertiary   location: south size: {Dimension 4000 50} justification: center font: {Font Kalima})))
+            (<Layout-View>                               size: {Dimension 400 20} location: south layout-type: fill layout-insets: {Rect 4 0 0 0}
+              (<Label-View>             name: note)))))))
+  
+  
+  (method override (finish rest)
+    (nextmethod rest)
+    (size-update)
+    (setup)
+    (add-listener~ dictionary self))
+  
+  
+  (method override (destroy)
+    (remove-listener~ dictionary self)
+    (nextmethod))
+  
+  
+  (method override (focus-default)
+    (focus-entries))
+  
+  
+  (method (focus-entries)
+    (let ((tree (locate 'entries)))
+      (acquire-focus~ tree)
+      (select-first-row~ tree)))
+  
+  
+  ;;;
+  ;;;; Setup
+  ;;;
+  
+  
+  (method (setup)
+    (define (setup-theme)
+      (let ((combo (locate 'theme)))
+        (set-choices~ combo `((#f "All") ,@(map (lambda (theme) (list theme (get-subject~ theme))) (sort-themes~ dictionary))))
+        (set-value~ combo #f)))
+    
+    (define (setup-language)
+      (set! language 'primary)
+      (let ((combo (locate 'language)))
+        (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (tertiary ,(get-tertiary~ dictionary))))
+        (set-value~ combo 'primary)))
+    
+    (set! dictionary (get-current-dictionary))
+    (setup-entries)
+    (setup-theme)
+    (setup-language)
+    (setup-words))
+  
+  
+  (method (setup-entries)
+    (set! entries (if theme
+                      (get-entries~ theme)
+                    (collect-entries~ dictionary))))
+  
+  
+  (method (setup-words)
+    (let ((tree (locate 'entries))
+          (getter (case language
+                    ((primary) get-primary~)
+                    ((secondary) get-secondary~)
+                    ((tertiary) get-tertiary~))))
+      (remove-every-row~ tree)
+      (with-update-locked~ tree
+        (lambda ()
+          (for-each (lambda (entry)
+                      (let ((title (getter entry)))
+                        (unless (empty-string? title)
+                          (add-row~ tree children: (list (new Tree-Node title: title)) user-data: entry))))
+                    (di-sort-ascending entries key: getter))))))
+  
+  
+  ;;;
+  ;;;; Keyboard
+  ;;;
+  
+  
+  (method override (get-tab-stops)
+    (list
+      (locate 'entries)))
+  
+  
+  ;;;
+  ;;;; Actions
+  ;;;
+  
+
+  (method override (guest-actions)
+    (cons (find-actions 'kalima-browse)
+          (nextmethod)))
+  
+  
+  ;;;
+  ;;;; Events
+  ;;;
+  
+  
+  (method (on-decrease evt)
+    (change-size previous-element))
+  
+  
+  (method (on-increase evt)
+    (change-size next-element))
+  
+  
+  (method (on-edit evt)
+    (if (not entry)
+        (bell)
+      (edit-entry entry 'primary)))
+  
+  
+  (method (on-theme evt)
+    (set! theme (get-value~ (get-sender~ evt)))
+    (setup-entries)
+    (setup-words)
+    (display "" "" "")
+    (display-note "" #f)
+    (focus-entries))
+  
+  
+  (method (on-language evt)
+    (set! language (get-value~ (get-sender~ evt)))
+    (setup-words)
+    (display "" "" "")
+    (display-note "" #f)
+    (focus-entries))
+  
+  
+  (method (on-selection-change evt)
+    (let ((tree (get-sender~ evt)))
+      (set! entry (get-single-selected-data~ tree))
+      (update)))
+  
+  
+  (method override (entry-change dictionary changed-entry)
+    (when (eq? changed-entry entry)
+      (update)))
+  
+  
+  ;;;
+  ;;;; Update
+  ;;;
+  
+  
+  (method (update)
+    (if (not entry)
+        (begin
+          (display "" "" "")
+          (display-note "" #f))
+      (let ((primary (get-primary~ entry))
+            (secondary (get-secondary~ entry))
+            (tertiary (get-tertiary~ entry))
+            (note (get-note~ entry))
+            (themes (present-entry-themes~ dictionary entry)))
+        (display primary secondary tertiary)
+        (display-note note themes))))
+  
+  
+  (method (display primary secondary tertiary)
+    (let ((label (locate 'primary)))
+      (set-color~ label {Color Black})
+      (set-title~ label primary))
+    (let ((label (locate 'secondary)))
+      (set-color~ label {Color red: .131 green: .131 blue: .619})
+      (set-title~ label secondary))
+    (let ((label (locate 'tertiary)))
+      (set-color~ label {Color red: .103 green: .502 blue: .151})
+      (set-title~ label tertiary)))
+  
+  
+  (method (display-note text themes)
+    (let ((label (locate 'note)))
+      (if (empty-string? text)
+          (set-title~ label (format "{?{a}~}" themes))
+        (set-title~ label (format "{a}{? : {a}~}" text themes))))))
+
+
+;;;
+;;;; Browse-Actions
+;;;
+
+
+(class Kalima-Browse-Actions extends Actions
+
+
+  (form
+    (<install>
       (<Action-Item> name: increase action-handler: {Event-Handler :focus-guest on-increase} shortcut: {Shortcut :control #\+})
       (<Action-Item> name: decrease action-handler: {Event-Handler :focus-guest on-decrease} shortcut: {Shortcut :control #\-})
       (<Action-Item> name: edit     action-handler: {Event-Handler :focus-guest on-edit} shortcut: {Shortcut :alt #\E} alternate-shortcut: {Shortcut F2}))))
