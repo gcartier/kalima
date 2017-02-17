@@ -380,8 +380,6 @@
         (<Separator>                                     size: {Dimension 14 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Review" resource: {Image-Resource "Edit"} portfolio: :images action-handler: {Event-Handler :form on-review})
         (<Separator>                                     size: {Dimension 8 0})
-        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Theme..." resource: {Image-Resource "ImportConfiguration"} portfolio: :images action-handler: {Event-Handler :form on-save-theme})
-        (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Augment Theme..." resource: {Image-Resource "ImportNew"} portfolio: :images action-handler: {Event-Handler :form on-augment-theme})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Reload Session" resource: {Image-Resource "Refresh"} portfolio: :images action-handler: {Event-Handler :form on-reload-session})
         (<Separator>                                     location: tail size: {Dimension 20 0})
         (<Push-Tool>                                     location: tail size: {Dimension 22 22} tooltip?: #t tooltip-text: "Save Session" resource: {Image-Resource "Save"} portfolio: :images action-handler: {Event-Handler :form on-save-session})
@@ -563,16 +561,6 @@
     (setup-entries review))
   
   
-  (method (on-save-theme evt)
-    (let ((subject (request-subject "Save Theme")))
-      (save-theme subject entries)))
-  
-  
-  (method (on-augment-theme evt)
-    (let ((subject (request-subject "Augment Theme")))
-      (save-theme subject entries augment?: #t)))
-  
-  
   (method (on-reload-session evt)
     (subjects-update))
   
@@ -590,12 +578,6 @@
           (session-selected? (theme-selected? "<Session>")))
       (save-theme "<Review>" review augment?: (and augment? (not review-selected?)) select?: #f)
       (save-theme "<Session>" entries augment?: (and augment? (not session-selected?)))))
-  
-  
-  (method (request-subject title (prefix: prefix #f) (initial-value: initial-value #f))
-    (let ((prefix (or prefix "Subject:"))
-          (initial-value (or initial-value "<Review>")))
-      (request-string title: title prefix: prefix initial-value: initial-value)))
   
   
   (method (save-theme subject entries (augment?: augment? #f) (select?: select? #t))
@@ -824,8 +806,6 @@
   (form
     (<install>
       (<Action-Item> name: review          action-handler: {Event-Handler :focus-guest on-review} shortcut: {Shortcut :alt #\R})
-      (<Action-Item> name: save-theme      action-handler: {Event-Handler :focus-guest on-save-theme} shortcut: {Shortcut :alt #\T})
-      (<Action-Item> name: augment-theme   action-handler: {Event-Handler :focus-guest on-augment-theme} shortcut: {Shortcut :alt :shift #\T})
       (<Action-Item> name: reload-session  action-handler: {Event-Handler :focus-guest on-reload-session} shortcut: {Shortcut :alt #\L})
       (<Action-Item> name: augment-session action-handler: {Event-Handler :focus-guest on-augment-session} shortcut: {Shortcut :alt #\S})
       (<Action-Item> name: replace-session action-handler: {Event-Handler :focus-guest on-replace-session} shortcut: {Shortcut :alt :shift #\S})
