@@ -78,7 +78,7 @@
           (tertiary (locate 'tertiary)))
       (let ((font (new Font font-name: 'vera-sans @windows "Times New Roman" point-size: (or point-size (get-kalima-point-size)))))
         (let ((height (font-height~ font)))
-          (let ((spacer (fxround (/ (fl height) 5.))))
+          (let ((spacer (fxround (/ (fl height) 10.))))
             (set-height~ entry (+ height spacer height spacer height))
             (set-height~ primary height)
             (set-font~ primary font)
@@ -365,6 +365,7 @@
   (slot entry      initialize #f)
   (slot ask        initialize #f)
   (slot language   initialize #f)
+  (slot restrict   initialize #f)
   (slot stage      initialize #f)
   (slot right      initialize #f)
   (slot review     initialize #f)
@@ -377,6 +378,10 @@
         (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
           (<Border-View>                                 border-color: {Color Entry-Border}
             (<Combo-Box>                name: ask        content-change-handler: {Event-Handler :document on-ask})))
+        (<Separator-View>                                size: {Dimension 4 0})
+        (<Border-View>                                   size: {Dimension 140 22} border-insets: {Rect 2 2 2 1} border-color: {Color Medium}
+          (<Border-View>                                 border-color: {Color Entry-Border}
+            (<Combo-Box>                name: restrict   content-change-handler: {Event-Handler :document on-restrict})))
         (<Separator>                                     size: {Dimension 14 0})
         (<Push-Tool>                                     size: {Dimension 22 22} tooltip?: #t tooltip-text: "Review" resource: {Image-Resource "Edit"} portfolio: :images action-handler: {Event-Handler :form on-review})
         (<Separator>                                     size: {Dimension 8 0})
@@ -400,7 +405,7 @@
             (<Layout-View>              name: center     location: center layout-type: center
               (<Layout-View>            name: entry      layout-type: border size: {Dimension 4000 110}
                 (<Label-View>           name: primary    location: north size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})
-                (<Label-View>           name: secondary  location: south size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})
+                (<Label-View>           name: secondary  location: center size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})
                 (<Label-View>           name: tertiary   location: south size: {Dimension 4000 50} justification: center font: {Font Kalima} mouse-down-handler: {Event-Handler :form on-entry})))
             (<Layout-View>                               size: {Dimension 200 20} location: south layout-type: fill layout-insets: {Rect 4 0 4 0}
               (<Layout-View>                             layout-type: border
@@ -435,9 +440,17 @@
         (set-choices~ combo `((primary ,(get-primary~ dictionary)) (secondary ,(get-secondary~ dictionary)) (tertiary ,(get-tertiary~ dictionary)) (:random ,random) (:answer ,answer)))
         (set-value~ combo 'primary)))
     
+    (define (setup-restrict)
+      (set! restrict 'any)
+      (let ((combo (locate 'restrict))
+            (any {Locales english: "Any" french: "Tous"}))
+        (set-choices~ combo `((any ,any) (secondary ,(get-secondary~ dictionary)) (tertiary ,(get-tertiary~ dictionary))))
+        (set-value~ combo 'any)))
+    
     (set! dictionary (get-current-dictionary))
     (set! ask 'primary)
     (setup-ask)
+    (setup-restrict)
     (setup-subjects)
     (subjects-update))
   
@@ -475,7 +488,11 @@
                       ((primary) get-primary~)
                       ((secondary) get-secondary~)
                       ((tertiary) get-tertiary~)
-                      (else #f))))
+                      (else #f)))
+            (restrict (case restrict
+                        ((any) #f)
+                        ((secondary) get-secondary~)
+                        ((tertiary) get-tertiary~))))
         (for-each-visible-row~ tree
           (lambda (row line)
             (let ((checkbox (first-child~ row)))
@@ -484,7 +501,8 @@
                   (for-each (lambda (entry)
                               (unless (memq? entry (queue-list entries))
                                 (when (or (not getter) (not (empty-string? (getter entry))))
-                                  (enqueue entries entry))))
+                                  (when (or (not restrict) (not (empty-string? (restrict entry))))
+                                    (enqueue entries entry)))))
                             (if theme
                                 (get-entries~ theme)
                               (collect-entries~ dictionary))))))))
@@ -553,6 +571,12 @@
   
   (method (on-ask evt)
     (set! ask (get-value~ (get-sender~ evt)))
+    (subjects-update)
+    (ask-word))
+  
+  
+  (method (on-restrict evt)
+    (set! restrict (get-value~ (get-sender~ evt)))
     (subjects-update)
     (ask-word))
   
