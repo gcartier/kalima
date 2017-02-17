@@ -336,18 +336,18 @@
   
   (method public (collect-themes entry)
     (collect-if (lambda (theme)
-                  (has-entry?~ theme entry))
+                  (and (user-theme? theme)
+                       (has-entry?~ theme entry)))
                 themes))
   
   
   (method public (sort-themes)
-    (sort (lambda (x y)
-            (let ((cx (starts-with? x "<"))
-                  (cy (starts-with? y "<")))
-              (cond ((and (not cx) cy) #t)
-                    ((and cx (not cy)) #f)
-                    (else (di<? x y)))))
-          themes key: get-subject~))
+    (sort di<? (collect-if user-theme? themes)
+      key: get-subject~))
+  
+  
+  (method public (user-theme? theme)
+    (not (starts-with? (get-subject~ theme) "<")))
   
   
   (method public (present-entry-themes entry)
@@ -457,7 +457,19 @@
   
   
   (method public (remove-entry entry)
-    (set! entries (remove! entry entries))))
+    (set! entries (remove! entry entries)))
+  
+  
+  (method public (replace-entries lst)
+    (set! entries lst))
+  
+  
+  (method public (random-entry)
+    (and (not-null? entries) (random-element entries)))
+  
+  
+  (method public (count-entries)
+    (length entries)))
 
 
 ;;;

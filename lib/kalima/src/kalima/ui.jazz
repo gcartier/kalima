@@ -112,14 +112,14 @@
   
   
   (slot dictionary initialize #f)
-  (slot entries    initialize #f)
+  (slot review     initialize #f)
+  (slot right      initialize #f)
+  (slot remaining  initialize #f)
   (slot entry      initialize #f)
   (slot ask        initialize #f)
   (slot language   initialize #f)
   (slot restrict   initialize #f)
   (slot stage      initialize #f)
-  (slot done       initialize #f)
-  (slot review     initialize #f)
   (slot undoer     initialize #f)
   
   
@@ -182,6 +182,17 @@
   
   
   (method (setup)
+    (define (setup-session)
+      (define (setup subject)
+        (or (find-theme~ dictionary subject)
+            (let ((theme (new Kalima-Theme dictionary subject '())))
+              (add-theme~ dictionary theme)
+              theme)))
+      
+      (set! review (setup "<Review>"))
+      (set! right (setup "<Right>"))
+      (set! remaining (setup "<Remaining>")))
+    
     (define (setup-ask)
       (let ((combo (locate 'ask))
             (random {Locales english: "Random" french: "Aléatoire"})
@@ -197,11 +208,12 @@
         (set-value~ combo 'any)))
     
     (set! dictionary (get-current-dictionary))
+    (setup-session)
     (set! ask 'primary)
     (setup-ask)
     (setup-restrict)
     (setup-subjects)
-    (subjects-update))
+    (setup-entries #f))
   
   
   (method (setup-subjects)
@@ -262,10 +274,10 @@
   
   (method (setup-entries lst)
     (reset~ undoer)
-    (set! entries lst)
     (set! stage 'question)
-    (set! done '())
-    (set! review '())
+    (when lst
+      (replace-entries~ right '())
+      (replace-entries~ remaining lst))
     (ask-word)
     (delay-event
       (lambda ()
@@ -331,41 +343,11 @@
   
   
   (method (on-review evt)
-    (setup-entries review))
+    (setup-entries (get-entries~ review)))
   
   
   (method (on-restart evt)
     (subjects-update))
-  
-  
-  (method (save-theme subject entries (augment?: augment? #f) (select?: select? #t))
-    (let ((references (map get-primary~ entries)))
-      (let ((actual (find-theme~ dictionary subject)))
-        (let ((theme (new Kalima-Theme dictionary subject (if (and augment? actual)
-                                                              (remove-duplicates (append (map get-primary~ (get-entries~ actual)) references) test: equal?)
-                                                            references))))
-          (replace-theme~ dictionary theme)
-          (setup-subjects)
-          (when select?
-            (select-theme theme))
-          theme))))
-  
-  
-  (method (select-theme theme)
-    (let ((tree (locate 'subjects)))
-      (let ((row (user-data-row~ tree theme)))
-        (let ((checkbox (first-child~ row)))
-          (set-checked?~ checkbox #t)
-          (subjects-update)))))
-  
-  
-  (method (theme-selected? subject)
-    (let ((theme (find-theme~ dictionary subject)))
-      (and theme
-           (let ((tree (locate 'subjects)))
-             (let ((row (user-data-row~ tree theme)))
-               (let ((checkbox (first-child~ row)))
-                 (get-checked?~ checkbox)))))))
   
   
   (method (on-decrease evt)
@@ -423,7 +405,7 @@
   
   
   (method (ask-word)
-    (ask-entry (and (not-null? entries) (random-element entries))))
+    (ask-entry (random-entry~ remaining)))
   
   
   (method (ask-entry new-entry)
@@ -455,9 +437,11 @@
   (method (right-answer)
     (when entry
       (register-undo)
-      (set! entries (remove entry entries))
-      (unless (memq? entry done)
-        (set! done (cons entry done)))
+      (remove-entry~ review entry)
+      (remove-entry~ remaining entry)
+      (unless (has-entry?~ right entry)
+        (add-entry~ right entry))
+      (set-modified?~ dictionary #t)
       (ask-word)
       (delay-event
         (lambda ()
@@ -467,9 +451,10 @@
   (method (review-answer)
     (when entry
       (register-undo)
-      (set! entries (remove entry entries))
-      (unless (memq? entry review)
-        (set! review (cons entry review)))
+      (remove-entry~ remaining entry)
+      (unless (has-entry?~ review entry)
+        (add-entry~ review entry))
+      (set-modified?~ dictionary #t)
       (ask-word)
       (delay-event
         (lambda ()
@@ -478,15 +463,15 @@
   
   (method (register-undo)
     (register-undo~ undoer
-      (let ((entries entries)
-            (done done)
-            (review review)
+      (let ((review (get-entries~ review))
+            (right (get-entries~ right))
+            (remaining (get-entries~ remaining))
             (entry entry))
         (lambda ()
           (register-undo)
-          (set! entries~self entries)
-          (set! done~self done)
-          (set! review~self review)
+          (replace-entries~ review~self review)
+          (replace-entries~ right~self right)
+          (replace-entries~ remaining~self remaining)
           (ask-entry entry)
           (delay-event
             (lambda ()
@@ -550,7 +535,7 @@
   
   (method (statistics)
     (let ((label (locate 'statistics)))
-      (set-title~ label (format "Review: {a}, done: {a}, remaining: {a}" (length review) (length done) (length entries))))))
+      (set-title~ label (format "Review: {a}, right: {a}, remaining: {a}" (count-entries~ review) (count-entries~ right) (count-entries~ remaining))))))
 
 
 ;;;

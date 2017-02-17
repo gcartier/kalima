@@ -33,13 +33,7 @@
 
 
 ;; TODO
-;; - super intuitive for revision
-;; - rethink themes interface whatever it is
-;;   especially all those icons in the revision
-;;   - maybe it becomes done / marked / remaining
-;;     and we can do stuff with the marked entries
 ;; - fix mac copy/paste with diacritic
-;; - fix resize when trees are scrolled
 ;; - add filtering to all toplevel views
 ;; - add, remove, reorder, group, ... themes
 
