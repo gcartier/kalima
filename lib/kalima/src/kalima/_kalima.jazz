@@ -95,7 +95,7 @@
       
       (define (print-theme theme last?)
         (let ((subject (get-subject~ theme))
-              (entries (get-entries~ theme)))
+              (entries (di-sort-ascending (get-entries~ theme) key: get-primary~)))
           (print-header subject)
           (format port "({s}" subject)
           (when (not-null? entries)
