@@ -391,6 +391,7 @@
   
   
   (method override (tab-press evt)
+    (remove-new~ dictionary entry)
     (right-answer))
   
   
@@ -431,6 +432,7 @@
   (method (show-answer)
     (when entry
       (set! stage 'answer)
+      (remove-new~ dictionary entry)
       (update)))
   
   
@@ -932,6 +934,7 @@
     (let ((tree (locate 'entries))
           (entry (new Kalima-Entry "" "" "" "")))
       (add-entry~ dictionary entry)
+      (add-new~ dictionary entry)
       (setup-entries)
       (select-user-data-row~ tree entry)
       (acquire-focus~ (locate '(entry primary)))))
@@ -969,7 +972,8 @@
   
   (method (text-change field content)
     (for-each (lambda (entry)
-                (update-entry~ dictionary entry field content))
+                (update-entry~ dictionary entry field content)
+                (add-new~ dictionary entry))
               selected)))
 
 

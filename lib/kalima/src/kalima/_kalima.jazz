@@ -312,6 +312,24 @@
     (set! modified? #t))
   
   
+  (method public (add-new entry)
+    (let ((theme (find-new-theme)))
+      (unless (has-entry?~ theme entry)
+        (add-entry~ theme entry))))
+  
+  
+  (method public (remove-new entry)
+    (let ((theme (find-new-theme)))
+      (remove-entry~ theme entry)))
+  
+  
+  (method public (find-new-theme)
+    (or (find-theme "New")
+        (let ((theme (new Kalima-Theme self "New" '())))
+          (add-theme theme)
+          theme)))
+  
+  
   (method public (find-theme subject)
     (find themes subject key: get-subject~ test: di=? return: 'item))
   
@@ -342,8 +360,14 @@
   
   
   (method public (sort-themes)
-    (sort di<? (collect-if user-theme? themes)
-      key: get-subject~))
+    (sort (lambda (x y)
+            (let ((nx (equal? x "New"))
+                  (ny (equal? y "New")))
+              (cond ((and nx (not ny)) #t)
+                    ((and (not nx) ny) #f)
+                    (else (di<? x y)))))
+          (collect-if user-theme? themes)
+          key: get-subject~))
   
   
   (method public (user-theme? theme)
