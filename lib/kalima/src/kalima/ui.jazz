@@ -48,7 +48,7 @@
   (find-setting 'kalima.point-size 36))
 
 (definition public (set-kalima-point-size point-size)
-  (set-setting~ (get-settings~ (get-application)) 'kalima.point-size point-size))
+  (set-setting~ (get-settings~ (current-application)) 'kalima.point-size point-size))
 
 
 ;;;
@@ -281,7 +281,7 @@
     (ask-word)
     (delay-event
       (lambda ()
-        (update-focus-actions~ (get-application)))))
+        (update-focus-actions~ (current-application)))))
   
   
   ;;;
@@ -447,7 +447,7 @@
       (ask-word)
       (delay-event
         (lambda ()
-          (update-focus-actions~ (get-application))))))
+          (update-focus-actions~ (current-application))))))
   
   
   (method (review-answer)
@@ -460,7 +460,7 @@
       (ask-word)
       (delay-event
         (lambda ()
-          (update-focus-actions~ (get-application))))))
+          (update-focus-actions~ (current-application))))))
   
   
   (method (register-undo)
@@ -477,7 +477,7 @@
           (ask-entry entry)
           (delay-event
             (lambda ()
-              (update-focus-actions~ (get-application))))))))
+              (update-focus-actions~ (current-application))))))))
   
   
   ;;;
